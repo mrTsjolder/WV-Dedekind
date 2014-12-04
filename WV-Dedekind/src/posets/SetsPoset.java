@@ -50,6 +50,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	 * this = {A subseteq fint.sp()|fint.getBottom() < {A} V fint.getBottom() <= fint.getTop()}
 	 * @param fint
 	 */
+	@SuppressWarnings("unchecked")
 	public SetsPoset(AntiChainInterval fint) {
 		SortedMap<Long,SortedSet<SmallBasicSet>> hLevel = new TreeMap<Long,SortedSet<SmallBasicSet>>();
 		successors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
@@ -93,6 +94,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	 * Build a poset of sets from a set of sets
 	 * @param fint
 	 */
+	@SuppressWarnings("unchecked")
 	public SetsPoset(Set<SmallBasicSet> sets) {
 		SortedMap<Long,SortedSet<SmallBasicSet>> hLevel = new TreeMap<Long,SortedSet<SmallBasicSet>>();
 		successors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
@@ -425,63 +427,6 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	}
 	
 	
-	/**
-	 * Compute the latticeSize using hash maps and symmetry.
-	 * Works well, but does not bring efficiency gain
-	 * @param exp
-	 * @param prepredec
-	 * @param lowerLevel
-	 * @param l
-	 * @param cache
-	 * @param cacheExp
-	 * @return
-	 */
-	private long getLatticeSize(int exp,
-			Map<SmallBasicSet, Set<SmallBasicSet>> prepredec,
-			Set<SmallBasicSet> lowerLevel, int l,
-			HashMap<AntiChain,Long> cache,
-			HashMap<AntiChain,Integer> cacheExp,
-			Set<int[]> symmetries) {
-		if (l > getMaxLevel()) {
-			return pow(exp);
-		}
-		AntiChain std = new AntiChain(lowerLevel).standard(symmetries);
-		if (cache.containsKey(std)) return cache.get(std)*pow(exp - cacheExp.get(std));
-		Set<SmallBasicSet> thisLevel = new HashSet<SmallBasicSet>();
-		Set<SmallBasicSet> goodSuccessors = new HashSet<SmallBasicSet>();
-		Set<SmallBasicSet> allPredecessors = new HashSet<SmallBasicSet>();
-		for (SmallBasicSet s : this.getLevel(l)) {
-			if (lowerLevel.containsAll(prepredec.get(s))) {
-				thisLevel.add(s);
-			}
-		}
-		Iterator<Set<SmallBasicSet>> it = getSetIterator(thisLevel);
-		long res = 0L;
-		int minexp = Long.SIZE;
-		while(it.hasNext()) {
-			Set<SmallBasicSet> alfa = it.next();
-			goodSuccessors.clear();
-			if (l+1 <= this.getMaxLevel()) {
-				Set<SmallBasicSet> levelAbove = getLevel(l+1);
-				for (SmallBasicSet t : levelAbove) {
-					if (alfa.containsAll(this.getPredecessors(t)))
-						goodSuccessors.add(t);
-				}
-			}
-			allPredecessors.clear();
-			for (SmallBasicSet s:alfa) {
-				allPredecessors.addAll(this.getPredecessors(s));
-			}
-			int myExp = goodSuccessors.size();
-			int lowExp = allPredecessors.size();
-			minexp = Math.min(minexp, exp-lowExp);
-			res += pow(exp - lowExp)*getLatticeSize(myExp,prepredec,alfa,l+2,cache,cacheExp,symmetries);
-		}
-		cache.put(std, res/pow(minexp));
-		cacheExp.put(std,exp - minexp);
-		return res;
-	}
-
 	private Iterator<Set<SmallBasicSet>> getSetIterator(
 			final Set<SmallBasicSet> thisLevel) {
 		return new Iterator<Set<SmallBasicSet>>() {
@@ -570,6 +515,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	 * @param setsPoset
 	 * @return this\cap setsPoset
 	 */
+	@SuppressWarnings("unchecked")
 	public SetsPoset intersect(SetsPoset setsPoset) {
 		SetsPoset ret = new SetsPoset();
 

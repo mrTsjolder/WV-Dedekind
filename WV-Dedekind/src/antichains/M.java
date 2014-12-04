@@ -16,6 +16,8 @@ import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
 
+//import mpi.*;
+
 /**
  * class for the computation of a Dedekind number
  * @author u0003471
@@ -29,8 +31,6 @@ public class M {
 
 	static private SmallBasicSet[] N;
 	static private AntiChain[] fN;
-//	static private AntiChain e;
-//	static private AntiChain eS;
 	static private AntiChainInterval[] iS;
 	
 	public M(int n, int coresUsed) throws SyntaxErrorException {
@@ -45,14 +45,10 @@ public class M {
 			basic += i + ", ";
 			N[i] = SmallBasicSet.parser().parse("[" + basic.subSequence(0, basic.length()-1) + "]");
 			fN[i] = AntiChain.oneSetFunction(N[i]);
-//			e = AntiChain.emptyFunction();
-//			eS = AntiChain.emptySetFunction();
 			iS[i] = AntiChainInterval.fullSpace(i);
 		}
 		
 		cores = coresUsed;
-
-		
 	}
 	
 	private class TestTime {

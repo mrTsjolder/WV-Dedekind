@@ -33,13 +33,10 @@ public class PCThread2 extends Thread {
 				for(AntiChain r3:functions.keySet()) {
 					if (r1.le(function) && r2.le(function) && r3.le(function)) {
 						sumP = sumP.add(
-								BigInteger.valueOf(functions.get(r1)).multiply(
-									BigInteger.valueOf(functions.get(r2)).multiply(
-									BigInteger.valueOf(functions.get(r3)).multiply(
-									intervalSizes.get(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3))).multiply(
-									intervalSizes.get(new AntiChainInterval(r1.join(r2).standard(), function.standard()))).multiply(
-									intervalSizes.get(new AntiChainInterval(r1.join(r3).standard(), function.standard()))).multiply(
-									intervalSizes.get(new AntiChainInterval(r2.join(r3).standard(), function.standard()))))))
+									BigInteger.valueOf(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3)).latticeSize()).multiply(
+									BigInteger.valueOf(new AntiChainInterval(r1.join(r2), function).latticeSize())).multiply(
+									BigInteger.valueOf(new AntiChainInterval(r1.join(r3), function).latticeSize())).multiply(
+									BigInteger.valueOf(new AntiChainInterval(r2.join(r3), function).latticeSize()))
 								);
 						evaluations++;
 		

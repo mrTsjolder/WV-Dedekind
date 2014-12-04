@@ -614,6 +614,7 @@ public class AntiChainSolver {
 	 * @throws SyntaxErrorException
 	 */
 	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till) throws SyntaxErrorException {
+		@SuppressWarnings("unchecked")
 		SortedMap<BigInteger, Long>[] reS = new TreeMap[till+1];
 		reS[0] = new TreeMap<BigInteger,Long>();
 		Storage.store(reS[0],AntiChain.emptyFunction().standard().encode());

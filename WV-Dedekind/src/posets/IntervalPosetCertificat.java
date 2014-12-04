@@ -2,8 +2,6 @@ package posets;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -105,10 +103,6 @@ public class IntervalPosetCertificat {
 	
 	private SortedMap<Long,SortedSet<Long>> getLabelPoset() {
 		return labelPoset;
-	}
-
-	private SortedMap<SmallBasicSet,Long> getSetLabels() {
-		return setLabels;
 	}
 
 	private SortedMap<SmallBasicSet,Long> setLabels;
