@@ -16,7 +16,7 @@ import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
 
-//import mpi.*;
+import mpi.*;
 
 /**
  * class for the computation of a Dedekind number

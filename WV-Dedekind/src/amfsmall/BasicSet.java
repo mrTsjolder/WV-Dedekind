@@ -52,11 +52,6 @@ public class BasicSet implements Iterable<Integer> {
 	}
 
 	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
 	 * the number of subsets of this basic set
 	 * @return 2^size()
 	 */
@@ -170,6 +165,7 @@ public class BasicSet implements Iterable<Integer> {
 	 * @param x the extra element
 	 * return this U {x}
 	 */
+	@SuppressWarnings("unchecked")
 	public BasicSet add(int x) {
 		BasicSet res = new BasicSet();
 		res.theSet = (HashSet<Integer>) theSet.clone();
@@ -182,6 +178,7 @@ public class BasicSet implements Iterable<Integer> {
 	 * @param x an array of integer
 	 * return this U {i|i in x}
 	 */
+	@SuppressWarnings("unchecked")
 	public BasicSet add(int[] x) {
 		BasicSet res = new BasicSet();
 		res.theSet = (HashSet<Integer>) theSet.clone();

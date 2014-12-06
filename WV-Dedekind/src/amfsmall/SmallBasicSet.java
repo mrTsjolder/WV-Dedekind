@@ -1,8 +1,6 @@
 package amfsmall;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.TreeSet;
 
 // import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -22,41 +20,17 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	private long theSet; // set representaion
 
 	private static long[] bits;
-
-	private static BasicSet[] sets;
-	
-	private static boolean[] compactSets; // intervals starting in 1
 	
 	public final static long MAXELEMENT = 12;
 	
 	static {
 		bits = new long[(int) MAXELEMENT];
-		sets = new BasicSet[1 << MAXELEMENT];
-		compactSets = new boolean[1 << MAXELEMENT];
 		
 		int p = 1;
 		for (int i=0;i<MAXELEMENT;i++) {
 			bits[i] = p;
 			p <<= 1;
 		}
-		long m2 = 1;
-		BasicSet aSet = BasicSet.emptySet();
-		for (int i=0;i<(1<<MAXELEMENT);i++) {
-			sets[i] = aSet;
-			if (i == m2 - 1) {
-				compactSets[i] = true;
-				m2 <<= 1;
-			}
-			else compactSets[i] = false;
-			aSet = increaseSet(aSet,1);
-		}
-	}
-	
-	private static BasicSet increaseSet(BasicSet aSet,int e) {
-		if (aSet.contains(e)) {
-			return increaseSet(aSet.remove(e),e+1);
-		}
-		else return aSet.add(e);
 	}
 	
 	private static SmallBasicSet theEmptySet = new SmallBasicSet();
@@ -88,36 +62,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	}
 
 	/**
-	 * split the basic set in n equally sized parts
-	 * @param n
-	 * @return an array of n disjoint basic sets, the n parts, the union is this
-	 */
-	public SmallBasicSet[] split(int n) {
-		SmallBasicSet[] res = new SmallBasicSet[n];
-		int p = 0;
-		for (p=0;p<n;p++) res[p] = new SmallBasicSet();
-		p = 0;
-		for (int i : getSet(theSet)) {
-			res[p] = res[p].add(i);
-			p = (p + 1) % n;
-		}
-		return res;
-	}
-
-	private BasicSet getSet(long theSet2) {
-		return sets[(int) theSet2];
-	}
-
-	/**
-	 * the number of subsets of this basic set
-	 * @return 2^size()
-	 */
-	public long numberOFSubsets() {
-		long res = 1L;
-		return res << size();
-	}
-
-	/**
 	 * the number of elements in this set
 	 * @param b
 	 * @return size
@@ -134,20 +78,7 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	public boolean hasAsSubset(SmallBasicSet b) {
 		return (theSet | b.theSet) == theSet;
 	}
-
-	/**
-	 * pick one element at random from this set
-	 * throws an NoSuchElementException if the set is empty
-	 * @param sup
-	 */
-	public int getOneFrom() throws NoSuchElementException {
-		return getSet().getOneFrom();
-	}
 	
-	private BasicSet getSet() {
-		return getSet(theSet);
-	}
-
 	/**
 	 * checks whether this set has any elements
 	 * @return the set has no elements
@@ -213,28 +144,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	public SmallBasicSet add(int x) {
 		return new SmallBasicSet(theSet | getBit(x));
 	}
-	
-	/**
-	 * construct a basic set with a number of extra elements
-	 * @param x an array of integer
-	 * return this U {i|i in x}
-	 */
-	public SmallBasicSet add(int[] x) {
-		long res = theSet;
-		for (Integer i : x) res = res |getBit(i);
-		return new SmallBasicSet(res);
-	}
-	
-	/**
-	 * return a string representation for display only
-	 * return the set described in a string
-	 */
-	public String toString() {
-		if (isEmpty()) return "0";
-		String res = "";
-		for (int i : this) res += toCharacter(i); 
-		return res;
-	}
 
 	/**
 	 * translate an accepatable character to an integer
@@ -271,28 +180,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	public static boolean isAcceptableCharElement(char c) {
 		int v = toIntegerElement(c);
 		return (0 < v && v <= SmallBasicSet.MAXELEMENT);
-	}
-
-
-	protected char toCharacter(int i) {
-		switch (i) {
-		case 1 : return '1';
-		case 2 : return '2';
-		case 3 : return '3';
-		case 4 : return '4';
-		case 5 : return '5';
-		case 6 : return '6';
-		case 7 : return '7';
-		case 8 : return '8';
-		case 9 : return '9';
-		case 10 : return 'a';
-		case 11 : return 'b';
-		case 12 : return 'c';
-		case 13 : return 'd';
-		case 14 : return 'e';
-		case 15 : return 'f';		
-		}
-		return '?';
 	}
 
 	@Override
@@ -411,15 +298,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	}
 	
 	/**
-	 * checks whether this is set is an interval with emptyset as the lower bound, inclusive
-	 * @return
-	 */
-	public boolean isCompact() {
-		return compactSets[(int) theSet];
-
-	}
-	
-	/**
 	 * @return the smallest element in the set. 0 if the set is empty
 	 * 
 	 */
@@ -478,19 +356,10 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 			res = res.add(table[i] + 1);
 		return res;
 	}
-
-	/**
-	 * convert an integer to a set
-	 * @param x
-	 * @return
-	 */
-	public static SmallBasicSet decode(int x) {
-		return new SmallBasicSet(x);
+	
+	//TODO: comments
+	public int toIntRepresentation() {
+		return (int) theSet;
 	}
 
-	public static SmallBasicSet getAcceptableElements() {
-		return universe((int) MAXELEMENT);
-	}
-
-	}
-
+}

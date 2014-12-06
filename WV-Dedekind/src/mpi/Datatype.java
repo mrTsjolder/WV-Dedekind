@@ -126,36 +126,35 @@ public class Datatype extends Freeable {
 
       if(oldSize != 0 || oldLbSet || oldUbSet) {
 
-	// `oldType.ub', `oldType.lb', `oldType.Extent()' all well-defined.
+    	  // `oldType.ub', `oldType.lb', `oldType.Extent()' all well-defined.
 
-	int oldExtent  = oldtype.Extent() ;
+    	  int oldExtent  = oldtype.Extent() ;
 
-	if(count > 0) {
+    	  if(count > 0) {
+	
+		  // Compose proper displacements...
+	
+	          int ptr = 0 ;
+	          for (int i = 0 ; i < count ; i++) {
+	        	  int startElement = i * oldExtent ;
+	
+	        	  for (int l = 0; l < oldSize; l++, ptr++)
+	        		  displacements [ptr] = startElement + oldtype.displacements[l] ;
+	          }
 
-	  // Compose proper displacements...
-
-          int ptr = 0 ;
-          for (int i = 0 ; i < count ; i++) {
-	    int startElement = i * oldExtent ;
-
-	    for (int l = 0; l < oldSize; l++, ptr++)
-	      displacements [ptr] = startElement + oldtype.displacements[l] ;
-          }
-
-	  // Now maximize/minimize upper/lower bounds
-
-          int maxStartElement = oldExtent > 0 ? (count - 1) * oldExtent : 0 ;
-          int max_ub = maxStartElement + oldtype.ub ;
-          if (max_ub > ub)
-            ub = max_ub ;
+	          // Now maximize/minimize upper/lower bounds
+       
+	          int maxStartElement = oldExtent > 0 ? (count - 1) * oldExtent : 0 ;
+	          int max_ub = maxStartElement + oldtype.ub ;
+	          if (max_ub > ub)
+	        	  ub = max_ub ;
             
-          int minStartElement = oldExtent > 0 ? 0 : (count - 1) * oldExtent ;
-          int min_lb = minStartElement + oldtype.lb ;
-          if (min_lb < lb)
-            lb = min_lb ;
-        }
-      }
-      else {
+	          int minStartElement = oldExtent > 0 ? 0 : (count - 1) * oldExtent ;
+	          int min_lb = minStartElement + oldtype.lb ;
+	          if (min_lb < lb)
+	        	  lb = min_lb ;
+    	  }
+      } else {
 
         // `oldType.ub', `oldType.lb' and `oldType.Extent()' are undefined.
         // Can ignore unless...
