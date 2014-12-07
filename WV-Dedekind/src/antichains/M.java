@@ -98,7 +98,6 @@ public class M {
 
 			ps.close();
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -116,6 +115,19 @@ public class M {
 		
 		timePair = doTime("Generated interval sizes",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		try {
+			MPI.Init(null);
+			int myRank = MPI.COMM_WORLD.Rank();
+			int nOfProc = MPI.COMM_WORLD.Size();
+			String name = MPI.Get_processor_name();
+			
+			System.out.print(String.format("Process %d of %d is on processor %s\n", myRank, nOfProc, name));
+			
+			MPI.Finalize();
+		} catch(MPIException mpie) {
+			mpie.printStackTrace();
+		}
 		
 		// test
 		long evaluations = 0;

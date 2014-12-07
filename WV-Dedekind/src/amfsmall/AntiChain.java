@@ -103,6 +103,7 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 	public boolean ge(AntiChain other) {
 		for (SmallBasicSet A : other)
 		{
+			//if (!ge(A)) return false;
 			boolean Ok = false;
 			for (SmallBasicSet B : this)
 				if (B.hasAsSubset(A)) {
