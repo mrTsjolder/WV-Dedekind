@@ -42,16 +42,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	private SmallBasicSet() {
 		theSet = 0L;
 	}
-	/**
-	 * construct a set from an array
-	 * @param is
-	 */
-	public SmallBasicSet(int[] is) {
-		theSet = 0L;		
-		for (Integer i : is) {
-				theSet |= getBit(i);
-		}
-	}
 	
 	public SmallBasicSet(long l) {
 		theSet = l;
@@ -274,10 +264,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 		return res;
 	}
 
-	public SmallBasicSet remove(int f) {
-		return new SmallBasicSet(theSet & (~getBit(f)));
-	}
-
 	public boolean contains(int f) {
 		return (theSet | getBit(f)) == theSet;
 	}
@@ -298,17 +284,6 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	}
 	
 	/**
-	 * @return the smallest element in the set. 0 if the set is empty
-	 * 
-	 */
-	public int minimum() {
-		if (isEmpty()) return 0;
-		int m = 1;
-		while (!contains(m)) m++;
-		return m;
-		}
-	
-	/**
 	 * @return the largest element in the set. 0 if the set is empty
 	 * 
 	 */
@@ -317,7 +292,7 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 		int m = (int) MAXELEMENT;
 		while (!contains(m)) m--;
 		return m;
-		}
+	}
 
 	public static SmallBasicSet universe() {
 		return new SmallBasicSet((1 << MAXELEMENT) - 1);

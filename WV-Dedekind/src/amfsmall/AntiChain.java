@@ -75,70 +75,6 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 	public AntiChain() {
 		super();
 	}
-	
-	public static Parser<AntiChain> parser() {
-		return new Parser<AntiChain>() {
-
-			
-			@Override
-			public AntiChain parse(String S) throws SyntaxErrorException {
-
-				return AntiChain.parse(S);
-			}
-
-			@Override
-			public boolean makesSense(String input) {
-				try {
-					AntiChain.parse(input);
-				}
-				catch (SyntaxErrorException e) {
-					return false;
-				}
-				return true;
-			}
-			
-		};
-	}
-	/**
-	 * parsing function
-	 * inverse of toString
-	 * @param r
-	 * @return the function described by r
-	 * throws SyntaxErrorException must be thrown if no object can be returned
-	 */
-	private static AntiChain parse(String r) throws SyntaxErrorException {
-		r = Parser.removeSpaces(r);
-		int universeBracket = r.indexOf('[');
-		SmallBasicSet universe = SmallBasicSet.universe(); // standard universe
-		if (universeBracket == 0) { // syntax "[...]{[.."
-			universe = SmallBasicSet.parser().parse(r);
-			r = r.substring(r.indexOf(']') + 1);
-		}
-		int opening = r.indexOf('{');
-		int closure = r.indexOf('}');
-		if (opening != 0) throw new SyntaxErrorException("AntiChain parsing \"" + r + "\": No introducing '{' found");
-		if (closure == -1) throw new SyntaxErrorException("AntiChain parse error \"" + r + "\": No closing '}' found");
-		AntiChain amf = new AntiChain(universe);
-		r = r.substring(opening + 1, closure).trim();
-		if (r.isEmpty()) return amf;
-		boolean longNotation = r.indexOf(']') >= 0;
-		while (!r.isEmpty()) {
-			try {
-				amf.addConditionally(SmallBasicSet.parser().parse(r));
-			} catch (SyntaxErrorException e) {
-				throw new SyntaxErrorException("AntiChain parsing \"" 
-						+ r + "\": No SmallBasicSet found\n(" + e + ")");
-			}
-			if (longNotation) r = r.substring(r.indexOf(']') + 1).trim();
-			else {
-				int comma = r.indexOf(',');
-				if (comma >= 0) r = r.substring(comma);
-				else r = "";
-			}
-			if (!r.isEmpty()) r = r.substring(1).trim();		
-		}
-		return amf;
-	}
 
 	/**
 	 * Check whether this AntiChain is less or equal that other
@@ -159,41 +95,6 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 		return true;
 	}
 	
-	/**
-	 * Check whether this AntiChain is less than other
-	 * @param other
-	 * @return true iff all sets in this are contained in at least one set in other and other != this
-	 */
-	public boolean lt(AntiChain other) {
-		return this.le(other) && !this.equals(other);
-	}
-
-	/**
-	 * Check whether this AntiChain is less or equal to the one with only x as an element
-	 * @param x
-	 * @return true iff x contains all sets in this
-	 */
-	public boolean le(SmallBasicSet x) {
-		for (SmallBasicSet b : this) {
-			if (!x.hasAsSubset(b)) return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Check whether this AntiChain is less than the one with only x as an element
-	 * @param x
-	 * @return true iff each set in this is contained in x and this is not the singleton x
-	 */
-	public boolean lt(SmallBasicSet x) {	
-		boolean equal = true;
-		for (SmallBasicSet b : this) {
-			if (!x.hasAsSubset(b)) return false;
-			if (!x.equals(b)) equal = false;
-		}
-		return !equal;
-		
-	}
 	/**
 	 * Check whether this AntiChain is greater or equal that other
 	 * @param other
@@ -233,22 +134,6 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 			if (B.hasAsSubset(x)) {
 				return true;
 			}
-		return false;
-	}
-
-	/**
-	 * Check whether this AntiChain is greater than the one with only x as an element
-	 * @param x
-	 * @return true iff x is contained in at least one set in this
-	 */
-	public boolean gt(SmallBasicSet x) {
-		boolean equal = true;
-		boolean supersetFound = false;
-		for (SmallBasicSet B : this) {
-			if (!B.equals(x)) equal = false;
-			if (B.hasAsSubset(x)) supersetFound = true;
-			if (supersetFound && !equal) return true;
-		}
 		return false;
 	}
 
@@ -306,20 +191,7 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 		res.addConditionallyAll(B);
 		return res;
 	}
-	/**
-	 * Product of two orthogonal AntiChains is the function that contains all unions of a set in this and a set in other
-	 * @param B
-	 * @pre sp(this) and sp(other) are disjoint
-	 * @return {AUB|A in this, B in other}
-	 */
-	public AntiChain timesOrtho(AntiChain other) {
-		AntiChain res = new AntiChain(getUniverse());
-		for (SmallBasicSet A : this)
-			for (SmallBasicSet B : other) {
-				res.addConditionally(B.union(A));
-			}
-		return res;
-	}
+	
 	/**
 	 * Generalised product of two AntiChains is the largest function K 
 	 * such that P_sp(this)(K) <= this and P_sp(other)(K) <= other and K <= {sp(this.plus(other))}
@@ -385,18 +257,6 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 			res.addConditionally(a.intersection(b));
 		}
 		return res;
-	}
-	
-	/**
-	 * produce a string for display
-	 */
-	public String toString() {
-		if (size() == 0) return "{}";
-		String res = "{";
-		for (SmallBasicSet X : this) {
-			res += X + ",";
-		}
-		return res.substring(0, res.lastIndexOf(',')) + "}";
 	}
 	
 	/**

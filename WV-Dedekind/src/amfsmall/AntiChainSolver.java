@@ -1,8 +1,6 @@
 package amfsmall;
 
 import java.math.BigInteger;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -68,62 +66,6 @@ public class AntiChainSolver {
 	}
 	
 	/**
-	 * assign a number of sets over a number of components such that each set is used at least in one component
-	 *
-	 * @param numberOfSets
-	 * @param numberOfComponents
-	 * @return an iterator going over the allowed assignments represented as a bitrepresentation (integers >0 and less thatn 2^numberOfComponents - 1)
-	 */
-	public static Iterator<int[]> multiSetCover(final int numberOfSets, final int numberOfComponents) {
-		return new Iterator<int[]>() {
-			
-			private int[] current;
-			private int limit;
-			private boolean notDone;
-			
-			{
-				current = new int[numberOfSets];
-				for (int i=0;i<numberOfSets;i++) current[i] = 1; // all sets in component 1
-				limit = (1<<numberOfComponents) - 1;
-				notDone = true;
-			}
-
-			@Override
-			public boolean hasNext() {
-				return notDone;
-			}
-
-			@Override
-			public int[] next() {
-				increase();
-				return current;
-			}
-
-			private void increase() {
-				{
-					int i;
-					for (i=0;i<numberOfSets;i++) {
-						if (current[i] == limit) current[i] = 1;
-						else {
-							current[i]++;
-							break;
-						}
-					}
-					notDone = (i < numberOfSets);
-				}
-			}
-
-			@Override
-			public void remove() {
-				// TODO Auto-generated method stub
-				
-			}
-			
-		};
-	}
-	
-	
-	/**
 	 * compute the equivalences of AMF(n) for n = 0 .. till inclusive
 	 * in BigInteger representation
 	 * This is based on algorithm 9 in "Ten Beuatiful formula..."
@@ -173,127 +115,5 @@ public class AntiChainSolver {
 			}
 		}
 		return S1;
-	}
-
-	/**
-	 * compute an intervaliterator working by dynamic programming on the last element of the span
-	 * Static version of the equivalent in AntiChainInterval
-	 * @pre interval is not empty
-	 * @param interval
-	 * @return
-	 */
-	private static Iterator<AntiChain> fastNonEmptyIterator(final AntiChainInterval interval) {
-		SmallBasicSet span = interval.getTop().sp();
-		if (span.isEmpty()) return new Iterator<AntiChain>() {
-			// empty span interval case. At most two elements
-			private AntiChain current = interval.getBottom();
-
-			@Override
-			public boolean hasNext() {
-				return current != null;
-			}
-
-			@Override
-			public AntiChain next() {
-				AntiChain ret = current;
-				if (current.equals(interval.getTop())) current = null;
-				else current = interval.getTop();
-				return ret;
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
-			}
-			
-		};
-		return new Iterator<AntiChain>() {
-
-			// non empty span
-			private SmallBasicSet span = interval.getTop().sp();
-			private AntiChain maxSpan = AntiChain.singletonFunction(span.maximum());
-			private AntiChain current = interval.getBottom();
-			private AntiChain[] alfaBottom = current.reduce(span);
-			private AntiChain[] alfaTop = interval.getTop().reduce(span);
-
-			private AntiChain[] alfa = new AntiChain[2];
-			@SuppressWarnings("unchecked")
-			private Iterator<AntiChain>[] iterator = new Iterator[2];
-			{ 
-				iterator[0] = fastIterator(new AntiChainInterval(alfaBottom[0],alfaTop[0]));
-				alfa[0] = iterator[0].next();
-				iterator[1] = fastIterator(new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])));
-				alfa[1] = iterator[1].next();
-			};
-
-			private AntiChain nextCurrent() {
-				// problem with times
-				if (alfa[1].isEmpty()) return alfa[0];
-				else return alfa[0].join(alfa[1].times(maxSpan));
-			}
-
-			@Override
-			public boolean hasNext() {
-				return current != null;
-			}
-
-			@Override
-			public AntiChain next() {
-				AntiChain ret = current;
-				if (iterator[1].hasNext()) {
-					alfa[1] = iterator[1].next();
-					current = nextCurrent();
-				}
-				else if (iterator[0].hasNext()) {
-					alfa[0] = iterator[0].next();
-					iterator[1] = fastIterator(new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])));
-					if (!iterator[1].hasNext()) current = null;
-					else { 
-						alfa[1] = iterator[1].next();
-						current = nextCurrent();		
-					}
-				}
-				else current = null;
-				return ret;
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
-			}
-			
-		};
-	}
-	
-	/**
-	 * compute an intervaliterator working by dynamic programming on the last element of the span
-	 * @param interval
-	 * @return
-	 */
-	public static Iterator<AntiChain> fastIterator(final AntiChainInterval interval) {
-		if (interval.getBottom().le(interval.getTop())) return fastNonEmptyIterator(interval);
-		else {
-			// empty interval
-			return new Iterator<AntiChain>() {
-
-				// no next!
-				
-				@Override
-				public boolean hasNext() {
-						return false;
-				}
-
-				@Override
-				public AntiChain next() {
-					throw new NoSuchElementException();
-				}
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-				
-			};
-		}
 	}
 }

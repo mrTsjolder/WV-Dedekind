@@ -39,43 +39,12 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	}
 
 	/**
-	 * Create an interval of antimonotonic functions with given limits and closed or open brackets
-	 * and an externally defined method to divide intervals while enumerating
-	 * @param bottom : lower limit
-	 * @param top : upper limit
-	 * @param closedBottom : true if closed at lower limit
-	 * @param closedTop : true if closed at upper limit
-	 * @param f : the externally defined method
-	 */
-	public AntiChainInterval(AntiChain bottom,AntiChain top,boolean closedBottom,boolean closedTop,
-			SubsetFinder f) {
-		this(bottom,top,closedBottom,closedTop);
-		setFinder(f);
-	}
-
-	/**
 	 * Create a closed interval of antimonotonic functions with given limits and closed or open brackets
 	 * @param bottom : lower limit
 	 * @param top : upper limit
 	 */
 	public AntiChainInterval(AntiChain bottom,AntiChain top) {
 		this(bottom,top,true,true);
-	}
-	
-	public void setFinder(SubsetFinder f) {
-		finder = f;
-	}
-
-	/**
-	 * Create a closed interval of antimonotonic functions with given limits and closed or open brackets
-	 * and an externally defined method to divide intervals while enumerating
-	 * @param bottom : lower limit
-	 * @param top : upper limit
-	 * @param f : the externally defined method
-	 */
-	public AntiChainInterval(AntiChain bottom,AntiChain top,SubsetFinder f) {
-		this(bottom,top,true,true);
-		setFinder(f);
 	}
 	
 	/**
@@ -101,20 +70,6 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	 */
 	public boolean isClosedAtTop() {
 		return closedAbove;
-	}
-	
-	/**
-	 * return a string describing the interval
-	 * with lower and upper limit and brackets
-	 */
-	public String toString() { 
-		String res = "";
-		if (isClosedAtBottom()) res += "[";
-		else res += "]";
-		res += getBottom() + ", " + getTop();
-		if (isClosedAtTop()) res += "]";
-		else res += "[";
-		return res;
 	}
 
 	/**

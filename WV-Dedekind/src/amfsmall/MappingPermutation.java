@@ -1,10 +1,9 @@
 package amfsmall;
+
 import java.util.Arrays;
 import java.util.Iterator;
 
 import auxiliary.Pair;
-
-// import com.sun.tools.javac.util.Pair;
 
 /**
  * permutes the two tables which should be considered as a mapping and its inverse

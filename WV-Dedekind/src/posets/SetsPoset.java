@@ -1,6 +1,5 @@
 package posets;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,18 +23,6 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	private SortedMap<SmallBasicSet,SortedSet<SmallBasicSet>> after;
 	private int minSize;
 	private int maxSize;
-//	private Set<int[]> symmetries;
-	// Symmetries were used in an experiment to compute the latticeSize using hashing.
-	// This does not bring any efficiency gain.
-
-	/**
-	 * equality of posets: the sets are equal
-	 * @param o
-	 * @return
-	 */
-	public boolean equals(SetsPoset o) {
-		return getPosetElements().equals(o.getPosetElements());
-	}
 	
 	/**
 	 * empty poset: the set is empty
@@ -89,84 +76,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 
 		buildCessors();
 	}
-	
-	/**
-	 * Build a poset of sets from a set of sets
-	 * @param fint
-	 */
-	@SuppressWarnings("unchecked")
-	public SetsPoset(Set<SmallBasicSet> sets) {
-		SortedMap<Long,SortedSet<SmallBasicSet>> hLevel = new TreeMap<Long,SortedSet<SmallBasicSet>>();
-		successors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		predecessors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		before = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		after = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		
-		minSize = Integer.MAX_VALUE;
-		maxSize = Integer.MIN_VALUE;
-		if (sets.isEmpty()) {                           //h.equals(fint.getBottom())) {
-			level = new SortedSet[1];
-			level[0] = new TreeSet<SmallBasicSet>();
-		}
-		else {
-			for (SmallBasicSet a : sets) {
-				maxSize = (int) Math.max(maxSize, a.size());
-				minSize = (int) Math.min(minSize, a.size());
-				store(hLevel,a);
-			}
 
-			level = new SortedSet[(int) (maxSize - minSize + 1)];
-			for (long k = minSize; k <=maxSize;k++) 
-				if (hLevel.containsKey(k)) level[(int) (k-minSize)] = hLevel.get(k);
-				else level[(int)(k-minSize)] = new TreeSet<SmallBasicSet>();
-		}
-		buildCessors();
-//		symmetries = getMinimalElements().symmetryGroup(getMaximalElements().symmetryGroup());
-	}
-	
-	/**
-	 * the poset consisting of all sets that can be written as the union of
-	 * a nonempty subset of an element of a and a nonempty subset of an element of b
-	 * @effect this(new AntiChainInterval(a.join(b),a.times(b))
-	 * @param a
-	 * @param b
-	 */
-	public SetsPoset(AntiChain a, AntiChain b) {
-		this(new AntiChainInterval(a.join(b), a.times(b)));
-	}
-	
-	/**
-	 * the poset of all subsets of a set s
-	 * @param s
-	 */
-	public SetsPoset(SmallBasicSet s) {
-		this(s.getSubSets());
-	}
-
-	public SetsPoset(SetsPoset setsPoset) {
-		successors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> (setsPoset.successors);
-		predecessors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> (setsPoset.predecessors);
-		before = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		after = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		
-		level = Arrays.copyOf(setsPoset.level,setsPoset.level.length);
-		minSize =  setsPoset.minSize;
-		maxSize = setsPoset.maxSize;
-	}
-
-	/**
-	 * create an empty SetsPoset to be used in low level constructions
-	 */
-	private SetsPoset() {
-		successors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		predecessors = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		before = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		after = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
-		
-		level = null;
-		minSize =  0;
-		maxSize = 0;
-	}
 	/**
 	 * after the level has been initialised, build the successor and predecessor structures
 	 */
@@ -190,29 +100,6 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 			}
 		}
 
-	}
-
-	/**
-	 * build a string representation of the poset
-	 * The representation comes in two lines
-	 * line 1 connects the elements with their immediate successors
-	 * lint 2 connects the elements with their immediate predecessors
-	 */
-	public String toString() {
-		String res = "";
-		for (int k = 0;k < level.length;k++) {
-			for (SmallBasicSet s: level[k]) {
-				res += s.toString() + "(" + successors.get(s) + ")\n";
-			}
-		}
-		res += "";
-		for (int k = 0;k < level.length;k++) {
-			for (SmallBasicSet s: level[k]) {
-				res += "(" + predecessors.get(s) + ")" + s.toString() + "\n";
-			}
-		}
-		res += this.getPosetElements();
-		return res;
 	}
 
 	/**
@@ -248,6 +135,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 		if (!before.containsKey(v) && predecessors.containsKey(v)) buildBefore(v);
 		return before.get(v);
 	}
+	
 	private void buildAfter(SmallBasicSet v) {
 		SortedSet<SmallBasicSet> a = new TreeSet<SmallBasicSet>();
 		for (SmallBasicSet p : successors.get(v)) {
@@ -264,32 +152,6 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 			b.addAll(getBefore(p));
 		}
 		before.put(v, b);
-	}
-
-	/**
-	 * get the amf that is maximal in the generated lattice
-	 * 
-	 * @return amf containing all elements not having a successor
-	 */
-	public AntiChain getMaximalElements() {
-		AntiChain res = new AntiChain();
-		for (SmallBasicSet s : getPosetElements()) {
-			if (getSuccessors(s).isEmpty()) res.add(s);
-		}
-		return res;
-	}
-	
-	/**
-	 * get the amf containing the minimal elements in the poset
-	 * 
-	 * @return amf containing all elements not having a predecessor
-	 */
-	public AntiChain getMinimalElements() {
-		AntiChain res = new AntiChain();
-		for (SmallBasicSet s : getPosetElements()) {
-			if (getPredecessors(s).isEmpty()) res.add(s);
-		}
-		return res;
 	}
 	
 	@Override
@@ -310,21 +172,6 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	@Override
 	public int getLevel(SmallBasicSet s) {
 		return (int) s.size() - getMinSize() + 1;
-	}
-
-	/**
-	 * get the lowest level at which element i is found
-	 * @param i
-	 * @return
-	 */
-	public int getLowestLevelOf(int i) {
-		for (int l = 1;l <= getMaxLevel();l++) {
-			SortedSet<SmallBasicSet> lev = getLevel(l);
-			for (SmallBasicSet s : lev) {
-				if (s.contains(i)) return l;
-			}
-		}
-		return getMaxLevel() + 1;
 	}
 
 	/**
@@ -379,12 +226,7 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 				}
 			}
 		}
-
-// not effecive 
-//		HashMap<AntiChain, Long> longHash = new HashMap<AntiChain,Long>();
-//		HashMap<AntiChain, Integer> intHash = new HashMap<AntiChain,Integer>();
-//		Set<int[]> symmetries = getMinimalElements().symmetryGroup(getMaximalElements().symmetryGroup());
-//		long res = getLatticeSize(exp,prepredec,new HashSet<SmallBasicSet>(),firstLevel, longHash, intHash, symmetries);
+		
 		long res = getLatticeSize(exp,prepredec,new HashSet<SmallBasicSet>(),firstLevel);
 		return res;
 	}
@@ -493,168 +335,5 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 			SortedSet<SmallBasicSet> bottom) {
 		throw new UnsupportedOperationException();
 	}
-
-	/**
-	 * Build the poset that is the set theoretical difference of 
-	 * this and setsPoset
-	 * @param setsPoset
-	 * @return this\setsPoset
-	 */
-	public SetsPoset minus(SetsPoset setsPoset) {
-//		SetsPoset ret = new SetsPoset();
-
-		SortedSet<SmallBasicSet> newPosetElements = new TreeSet<SmallBasicSet>(getPosetElements());
-		newPosetElements.removeAll(setsPoset.getPosetElements());
-		
-		return new SetsPoset(newPosetElements);
-	}
-
-	/**
-	 * Build the poset that is the set theoretical intersection of 
-	 * this and setsPoset
-	 * @param setsPoset
-	 * @return this\cap setsPoset
-	 */
-	@SuppressWarnings("unchecked")
-	public SetsPoset intersect(SetsPoset setsPoset) {
-		SetsPoset ret = new SetsPoset();
-
-		SortedSet<SmallBasicSet> newPosetElements = new TreeSet<SmallBasicSet>(getPosetElements());
-		newPosetElements.retainAll(setsPoset.getPosetElements());
-		ret.minSize = Integer.MAX_VALUE;
-		ret.maxSize = Integer.MIN_VALUE;
-
-		SortedMap<Long,SortedSet<SmallBasicSet>> hLevel = new TreeMap<Long,SortedSet<SmallBasicSet>>();
-
-		for (SmallBasicSet s : newPosetElements) {
-			store(hLevel,s);
-			ret.minSize = (int) Math.min(ret.minSize, s.size());
-			ret.maxSize = (int) Math.max(ret.maxSize, s.size());
-			SortedSet<SmallBasicSet> newSuccessors = new TreeSet<SmallBasicSet>(getSuccessors(s));
-			SortedSet<SmallBasicSet> newPredecessors = new TreeSet<SmallBasicSet>(getPredecessors(s));
-			newPredecessors.retainAll(setsPoset.getPredecessors(s));
-			newSuccessors.retainAll(setsPoset.getSuccessors(s));
-			ret.successors.put(s, newSuccessors);
-			ret.predecessors.put(s, newPredecessors);
-		}
-		ret.level = new SortedSet[(int) (ret.maxSize - ret.minSize + 1)];
-		for (long k = ret.minSize; k <=ret.maxSize;k++) 
-			if (hLevel.containsKey(k)) ret.level[(int) (k-ret.minSize)] = hLevel.get(k);
-			else level[(int)(k-ret.minSize)] = new TreeSet<SmallBasicSet>();
-		return ret;
-	}
-
-	/**
-	 * Build the poset that is the set theoretical union of 
-	 * this and setsPoset
-	 * @param setsPoset
-	 * @return this U setsPoset
-	 */
-	public SetsPoset union(SetsPoset setsPoset) {
-		SortedSet<SmallBasicSet> newPosetElements = new TreeSet<SmallBasicSet>(getPosetElements());
-		newPosetElements.addAll(setsPoset.getPosetElements());
-		return new SetsPoset(newPosetElements);
-	}
 	
-	/**
-	 * return the set of amf with this poset as its poset
-	 * @return
-	 */
-	public SortedSet<AntiChain> getLattice() {
-		return getLattice(getPosetElements());
-	}
-
-	/**
-	 * return the set of amf with the set posetElements as its set of posetelements
-	 * naive recursive implementation
-	 * @return
-	 */
-	private static SortedSet<AntiChain> getLattice(
-			SortedSet<SmallBasicSet> posetElements) {
-		if (posetElements.isEmpty()) {
-			TreeSet<AntiChain> ret = new TreeSet<AntiChain>();
-			ret.add(AntiChain.emptyFunction());
-			return ret;
-		}
-		SortedSet<SmallBasicSet> set = new TreeSet<SmallBasicSet>();
-		SmallBasicSet f = posetElements.first();
-		set.addAll(posetElements);
-		set.remove(f);
-		SortedSet<AntiChain> ret = getLattice(set);
-		TreeSet<SmallBasicSet> setToRemove = new TreeSet<SmallBasicSet>();
-		for (SmallBasicSet s : set) if (s.hasAsSubset(f) || f.hasAsSubset(s)) setToRemove.add(s);
-		set.removeAll(setToRemove);
-		for (AntiChain x : getLattice(set)) {
-			x.add(f);
-			ret.add(x);
-		}
-		return ret;
-	}
-		
-	public Iterator<AntiChain> getLatticeIterator() {
-		if (this.isEmpty()) {
-			return new Iterator<AntiChain>() {
-
-				private boolean notUsed = true;
-
-				@Override
-				public boolean hasNext() {
-					return notUsed;
-				}
-
-				@Override
-				public AntiChain next() {
-					notUsed = false;
-					return new AntiChain();
-				}
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-				
-			};
-		}
-		else return new Iterator<AntiChain>() {
-
-			SmallBasicSet current;
-			SortedSet<SmallBasicSet> currentSet ;
-			Iterator<AntiChain> currentIterator;
-
-			{
-				int maxLevel = getMaxLevel();
-				currentSet = new TreeSet<SmallBasicSet>();
-				if (!getLevel(maxLevel).isEmpty()) {
-					current = getLevel(maxLevel).first();
-					currentSet.add(current);
-				}
-				currentIterator = SetsPoset.this.minus(new SetsPoset(current.getSubSets())).getLatticeIterator();
-			}
-			
-			@Override
-			public boolean hasNext() {
-				return currentIterator.hasNext() || !currentSet.isEmpty();
-			}
-
-			@Override
-			public AntiChain next() {
-				if (currentIterator.hasNext()) {
-					AntiChain nxt = /*new AntiChain*/(currentIterator.next());
-					for (SmallBasicSet c : currentSet) nxt.addConditionally(c);
-					return nxt;
-				}
-				else /* (!currentSet.isEmpty()) */ {
-					currentIterator = SetsPoset.this.minus(new SetsPoset(currentSet)).getLatticeIterator();
-					currentSet.clear();
-					return currentIterator.next();
-				}
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
-			}
-			
-		};
-	}
 }
