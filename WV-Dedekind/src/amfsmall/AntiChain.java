@@ -1,6 +1,3 @@
-/**
- * 
- */
 package amfsmall;
 
 import java.math.BigInteger;
@@ -93,6 +90,15 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 			if (!Ok) return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Check whether this AntiChain is less than other
+	 * @param other
+	 * @return true iff all sets in this are contained in at least one set in other and other != this
+	 */
+	public boolean lt(AntiChain other) {
+		return this.le(other) && !this.equals(other);
 	}
 	
 	/**
@@ -213,6 +219,7 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 		// a x {} = {} x a = a !!!!!!!!!!!!!!!!!
 		if (isEmpty()) return new AntiChain(other); // may not have been tested
 		else if (other.isEmpty()) return new AntiChain(this); //!!! may not have been tested
+		//TODO: isn't a x {} = {} x a = {} ?
 		AntiChain res = new AntiChain(getUniverse());
 		for (SmallBasicSet X : this)
 			for (SmallBasicSet Y : other) {
@@ -611,6 +618,18 @@ public class AntiChain extends TreeSet<SmallBasicSet> implements Comparable<Anti
 		a1.removeAll(ret[0]);
 		ret[1] = a1.project(p);
 		return ret;
+	}
+
+	/**
+	 * produce a string for display
+	 */
+	public String toString() {
+		if (size() == 0) return "{}";
+		String res = "{";
+		for (SmallBasicSet X : this) {
+			res += X + ",";
+		}
+		return res.substring(0, res.lastIndexOf(',')) + "}";
 	}
 
 }

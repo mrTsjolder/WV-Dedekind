@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -72,39 +73,19 @@ public class M2 {
 		int n = dedekind - 3;
 		int reportRate = 10;
 		
-		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);
-		SortedMap<AntiChain, Long> functions = new TreeMap<AntiChain, Long>();
-
-		timePair = doTime("Generated equivalence classes at ",timePair);
-		timeCPU = doCPUTime("CPU ",timeCPU);
-
-		PrintStream ps;
-		try {
-			ps = new PrintStream("EquivalenceClasses" + n);
-
-			// collect
-			for (int i=0;i<classes.length;i++) {
-				long coeff = SmallBasicSet.combinations(n, i);
-				for (BigInteger b : classes[i].keySet()) {
-					Storage.store(functions, AntiChain.decode(b),classes[i].get(b)*coeff);
-					ps.println(AntiChain.decode(b) + "," + classes[i].get(b)*coeff);
-				}	
-			}
-
-			ps.close();
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		timePair = doTime("Collected equivalence classes at ",timePair);
-		timeCPU = doCPUTime("CPU ",timeCPU);
+		ArrayList<AntiChain> functions = new ArrayList<>();
 		
 		AntiChain e = AntiChain.emptyFunction();
 		AntiChain u = AntiChain.oneSetFunction(SmallBasicSet.universe(n));
+
+		Iterator<AntiChain> it = new AntiChainInterval(e,u).fastIterator();
+		while(it.hasNext()) {
+			functions.add(it.next());
+		}
+		
 		SortedMap<AntiChainInterval, BigInteger> intervalSizes = new TreeMap<AntiChainInterval, BigInteger>();
-		for (AntiChain f : functions.keySet()) {
-			for (AntiChain g : functions.keySet()) {
+		for (AntiChain f : functions) {
+			for (AntiChain g : functions) {
 				if(f.le(g)) {
 					AntiChainInterval interval = new AntiChainInterval(f,g);
 					intervalSizes.put(interval, BigInteger.valueOf(interval.latticeSize()));
@@ -118,12 +99,10 @@ public class M2 {
 		// test
 		long evaluations = 0;
 		long newEvaluations = 0;
-		Iterator<AntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
 				
 		Collector collector = new Collector(cores);
 
-		while (it2.hasNext()) {
-			AntiChain r2 = it2.next();
+		for(AntiChain r2 : functions) {
 			new PCThread2(r2, functions, intervalSizes, collector).start();
 			newEvaluations += collector.iterations();
 			if (newEvaluations > reportRate) {
@@ -148,6 +127,11 @@ public class M2 {
 
 		System.out.println(String.format("%30s %15d ns","Total cpu time used ",collector.time() + getCpuTime()));
 		System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
+		
+		System.out.println("count1: " + PCThread2.count1);
+		System.out.println("count2: " + PCThread2.count2);
+		System.out.println("count3: " + PCThread2.count3);
+		System.out.println("rest: " + PCThread2.rest);
 	}
 
 	private TestTime doTime(String msg, TestTime timePair) {

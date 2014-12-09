@@ -77,8 +77,8 @@ public class M {
 		int n = dedekind - 2;
 		int reportRate = 10;
 		
-		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);
-		SortedMap<AntiChain, Long> functions = new TreeMap<AntiChain, Long>();
+		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
+		SortedMap<AntiChain, Long> functions = new TreeMap<AntiChain, Long>();			//number of antichains in 1 equivalence-class
 
 		timePair = doTime("Generated equivalence classes at ",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
@@ -110,13 +110,14 @@ public class M {
 		SortedMap<AntiChain, BigInteger> rightIntervalSize = new TreeMap<AntiChain, BigInteger>();
 		for (AntiChain f : functions.keySet()) {
 			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
+			//TODO: time gain for calculating rightIntervalSizes in PCThread?
 			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
 		}
 		
 		timePair = doTime("Generated interval sizes",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
-		try {
+/*		try {
 			MPI.Init(null);
 			int myRank = MPI.COMM_WORLD.Rank();
 			int nOfProc = MPI.COMM_WORLD.Size();
@@ -127,7 +128,7 @@ public class M {
 			MPI.Finalize();
 		} catch(MPIException mpie) {
 			mpie.printStackTrace();
-		}
+		}*/
 		
 		// test
 		long evaluations = 0;
