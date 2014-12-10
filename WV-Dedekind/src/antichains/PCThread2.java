@@ -15,11 +15,10 @@ public class PCThread2 extends Thread {
 	private ArrayList<AntiChain>functions;
 	private SortedMap<AntiChainInterval, BigInteger> intervalSizes;
 	private Collector collector;
-	
-	public static int count1 = 0;
-	public static int count2 = 0;
-	public static int count3 = 0;
-	public static String rest = "";
+
+	public static final BigInteger COEFF2 = BigInteger.valueOf(2);
+	public static final BigInteger COEFF3 = BigInteger.valueOf(3);
+	public static final BigInteger COEFF6 = BigInteger.valueOf(6);
 
 	public PCThread2(AntiChain r2, ArrayList<AntiChain> fs, SortedMap<AntiChainInterval, BigInteger> is, Collector cr) throws InterruptedException {
 		function = new AntiChain(r2);
@@ -33,8 +32,7 @@ public class PCThread2 extends Thread {
 	public void run() {
 		long time = getCpuTime();
 		BigInteger sumP = BigInteger.ZERO;
-		BigInteger coeff3 = BigInteger.valueOf(3);
-		BigInteger coeff6 = BigInteger.valueOf(6);
+		BigInteger term;
 		long evaluations = 0;
 		for (AntiChain r1:functions)
 			if(r1.le(function))
@@ -42,28 +40,19 @@ public class PCThread2 extends Thread {
 					if(r2.le(function) && !r2.gt(r1)) 
 						for(AntiChain r3:functions) 
 							if (r3.le(function) && !r3.gt(r2) && !r3.gt(r1)) {
+								term = intervalSizes.get(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3))).multiply(
+										intervalSizes.get(new AntiChainInterval(r1.join(r2), function))).multiply(
+										intervalSizes.get(new AntiChainInterval(r1.join(r3), function))).multiply(
+										intervalSizes.get(new AntiChainInterval(r2.join(r3), function)));
 								if(r3.lt(r2) && r2.lt(r1)) {
-									sumP = sumP.add(
-										intervalSizes.get(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r2), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r3), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r2.join(r3), function))).multiply(coeff6)
-									);
-								} else if(!r2.lt(r1) && !r3.lt(r2)){
-									sumP = sumP.add(
-										intervalSizes.get(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r2), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r3), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r2.join(r3), function)))
-									);
+									sumP = sumP.add(term.multiply(COEFF6));
+								} else if((r2.lt(r1) && !r3.le(r2) && !r3.le(r1)) || (r3.lt(r1) && !r3.le(r2) && !r2.le(r1)) || 
+										(r3.lt(r2) && !r2.le(r1) && !r3.le(r1))) {
+									sumP = sumP.add(term.multiply(COEFF2));
+								} else if((!r1.lt(r2) && r3.lt(r2)) || (!r2.lt(r3) && r2.lt(r1)) || (!r3.lt(r1) && r3.lt(r2))){
+									sumP = sumP.add(term.multiply(COEFF3));
 								} else {
-									sumP = sumP.add(
-										intervalSizes.get(new AntiChainInterval(AntiChain.emptyFunction(), r1.meet(r2).meet(r3))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r2), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r1.join(r3), function))).multiply(
-										intervalSizes.get(new AntiChainInterval(r2.join(r3), function))).multiply(coeff3)
-									);
-									rest += function.toString() + ":" + r1.toString() + "|" + r2.toString() + "|" + r3.toString() + ", ";
+									sumP = sumP.add(term);
 								}
 								evaluations++;
 							}

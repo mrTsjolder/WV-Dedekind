@@ -1,7 +1,5 @@
 package antichains;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
@@ -12,9 +10,7 @@ import java.util.TreeMap;
 
 import amfsmall.AntiChain;
 import amfsmall.AntiChainInterval;
-import amfsmall.AntiChainSolver;
 import amfsmall.SmallBasicSet;
-import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
 
 public class M2 {
@@ -127,11 +123,6 @@ public class M2 {
 
 		System.out.println(String.format("%30s %15d ns","Total cpu time used ",collector.time() + getCpuTime()));
 		System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
-		
-		System.out.println("count1: " + PCThread2.count1);
-		System.out.println("count2: " + PCThread2.count2);
-		System.out.println("count3: " + PCThread2.count3);
-		System.out.println("rest: " + PCThread2.rest);
 	}
 
 	private TestTime doTime(String msg, TestTime timePair) {
