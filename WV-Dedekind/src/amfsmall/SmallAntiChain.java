@@ -2,11 +2,12 @@ package amfsmall;
 
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * More efficient representation for AntiChains.
  */
-public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElement {
+public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<SmallAntiChain>, LatticeElement {
 
 	private BitSet theAntiChain = new BitSet();
 	private SmallBasicSet universe = SmallBasicSet.universe();
@@ -77,16 +78,16 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 	}
 	
 	public static SmallAntiChain emptyAntiChain(SmallBasicSet u) {
-		SmallAntiChain result = emptyAntiChain;
+		SmallAntiChain result = emptyAntiChain();
 		result.setUniverse(u);
 		return result;
 	}
 	
-	public static void makeAntiChain(SmallAntiChain pseudoAC) {
-		for(int i = pseudoAC.theAntiChain.nextSetBit(0); i >= 0; i = pseudoAC.theAntiChain.nextSetBit(i+1)) {
-			//TODO?
-		}
-	}
+//	public static void makeAntiChain(SmallAntiChain pseudoAC) {
+//		for(int i = pseudoAC.theAntiChain.nextSetBit(0); i >= 0; i = pseudoAC.theAntiChain.nextSetBit(i+1)) {
+//			//TODO:?
+//		}
+//	}
 	
 	/********************************************************
 	 * Utilities											*
@@ -122,16 +123,6 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 		return false;
 	}
 	
-	//TODO: nodig? ArrayList?
-	public int[] getIndices() {
-		int[] result = new int[theAntiChain.cardinality()];
-		int k = 0;
-		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
-			result[k++] = i;
-		}
-		return result;
-	}
-	
 	/**
 	 * Add a set to this antichain, so that the resulting antichain is 
 	 * the supremum of the union of this and {x}.
@@ -149,16 +140,37 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 	}
 
 	private void addConditionallyAll(SmallAntiChain x) {
-		for(int i : x.getIndices()) addConditionally(new SmallBasicSet(i));
+		for(int i = x.theAntiChain.nextSetBit(0); i >= 0; i = x.theAntiChain.nextSetBit(i+1)) {
+			addConditionally(new SmallBasicSet(i));
+		}
 	}
 	
 	//TODO: efficiency?
 	public SmallBasicSet sp() {
 		SmallBasicSet span = SmallBasicSet.emptySet();
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
-			span.union(new SmallBasicSet(i));
+			span = span.union(new SmallBasicSet(i));
 		}
 		return span;
+	}
+	
+	//TODO: useful?
+/*	public SmallAntiChain sup() {
+		SmallAntiChain result = new SmallAntiChain(this);
+		for(int i = result.theAntiChain.length(); (i = result.theAntiChain.previousSetBit(i-1)) >= 0; ) {
+			if(Integer.bitCount(i) == 1) {
+				//for(int j = )
+			}
+		}
+		return result;
+	}*/
+	
+	public boolean ge(SmallBasicSet x) {
+		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
+			if(new SmallBasicSet(i).hasAsSubset(x))
+				return true;
+		}
+		return false;
 	}
 	
 	/********************************************************
@@ -175,10 +187,10 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 
 	@Override
 	public LatticeElement meet(LatticeElement e) {
-		SmallAntiChain result = new SmallAntiChain(this);
+		SmallAntiChain result = SmallAntiChain.emptyAntiChain(this.getUniverse());
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
-			for(int j = ((SmallAntiChain) e).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e).theAntiChain.nextSetBit(j+1))
-				result.addConditionally(new SmallBasicSet(i).intersection(new SmallBasicSet(j)));
+			for(int j = ((SmallAntiChain) e).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e).theAntiChain.nextSetBit(j+1)) 
+				result.addConditionally(new SmallBasicSet(j).intersection(new SmallBasicSet(i)));
 		return result;
 	}
 
@@ -194,7 +206,7 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 			return new SmallAntiChain(this);
 		
 		SmallBasicSet x,y;
-		SmallBasicSet spthis = this.sp(), spe = ((AntiChain) e).sp();
+		SmallBasicSet spthis = this.sp(), spe = ((SmallAntiChain) e).sp();
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
 			for(int j = ((SmallAntiChain) e).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e).theAntiChain.nextSetBit(j+1)) {
 				x = new SmallBasicSet(i);
@@ -206,20 +218,45 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 
 	@Override
 	public LatticeElement dual() {
-		// TODO Auto-generated method stub
-		return null;
+		SmallAntiChain tres, result = SmallAntiChain.emptyAntiChain(this.getUniverse());
+		result.add(this.getUniverse());
+		SmallBasicSet max, a, k;
+		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
+			tres = SmallAntiChain.emptyAntiChain(this.getUniverse());
+			k = new SmallBasicSet(i);
+			max = this.getUniverse().minus(k);
+			for (int j = result.theAntiChain.nextSetBit(0); j >= 0; j = result.theAntiChain.nextSetBit(j+1)) {
+				a = new SmallBasicSet(j);
+				if (!a.hasAsSubset(max)) tres.addConditionally(a);
+				else for (int x:max) tres.addConditionally(a.minus(x));
+			}
+			result = tres;
+		}
+		return result;
 	}
 
 	@Override
 	public boolean ge(LatticeElement e1) {
-		// TODO Auto-generated method stub
-		return false;
+		for(int i = ((SmallAntiChain) e1).theAntiChain.nextSetBit(0); i >= 0; i = ((SmallAntiChain) e1).theAntiChain.nextSetBit(i+1)) {
+			if(!ge(new SmallBasicSet(i)))
+				return false;
+		}
+		return true;
 	}
 
 	@Override
 	public boolean le(LatticeElement e1) {
-		// TODO Auto-generated method stub
-		return false;
+		boolean ok;
+		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
+			ok = false;
+			for(int j = ((SmallAntiChain) e1).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e1).theAntiChain.nextSetBit(j+1))
+				if(new SmallBasicSet(j).hasAsSubset(new SmallBasicSet(i))) {
+					ok = true;
+					break;
+				}
+			if(!ok) return false;
+		}
+		return true;
 	}
 
 	@Override
@@ -231,6 +268,45 @@ public class SmallAntiChain implements Comparable<SmallAntiChain>, LatticeElemen
 	public int compareTo(SmallAntiChain o) {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public Iterator<SmallBasicSet> iterator() {
+		return new Iterator<SmallBasicSet>() {
+			
+			private int current = 0;
+
+			@Override
+			public boolean hasNext() {
+				return theAntiChain.nextSetBit(current + 1) >= 0;
+			}
+
+			@Override
+			public SmallBasicSet next() {
+				current = theAntiChain.nextSetBit(current + 1);
+				return new SmallBasicSet(current);
+			}
+
+			@Override
+			public void remove() {
+				// throw new NotImplementedException();
+				
+			}
+			
+		};
+	}
+	
+	/**
+	 * produce a string for display
+	 */
+	@Override
+	public String toString() {
+		if (theAntiChain.isEmpty()) return "{}";
+		String res = "{";
+		for (int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
+			res += new SmallBasicSet(i) + ",";
+		}
+		return res.substring(0, res.lastIndexOf(',')) + "}";
 	}
 	
 	//TODO: delete

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package amfsmall;
 
 import java.util.Iterator;
