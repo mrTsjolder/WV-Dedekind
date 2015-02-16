@@ -10,7 +10,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import amfsmall.AntiChainInterval;
-import amfsmall.AntiChain;
+import amfsmall.SmallAntiChain;
 import amfsmall.AntiChainSolver;
 import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
@@ -30,21 +30,21 @@ public class M {
 	public final int cores;
 
 	static private SmallBasicSet[] N;
-	static private AntiChain[] fN;
+	static private SmallAntiChain[] fN;
 	static private AntiChainInterval[] iS;
 	
 	public M(int n, int coresUsed) throws SyntaxErrorException {
 		dedekind = n;
 		
 		N = new SmallBasicSet[n];
-		fN = new AntiChain[n];
+		fN = new SmallAntiChain[n];
 		iS = new AntiChainInterval[n];
 
 		String basic = "";
 		for (int i = 1;i< n;i++) {
 			basic += i + ", ";
 			N[i] = SmallBasicSet.parser().parse("[" + basic.subSequence(0, basic.length()-1) + "]");
-			fN[i] = AntiChain.oneSetFunction(N[i]);
+			fN[i] = SmallAntiChain.oneSetAntiChain(N[i]);
 			iS[i] = AntiChainInterval.fullSpace(i);
 		}
 		
@@ -78,7 +78,7 @@ public class M {
 		int reportRate = 10;
 		
 		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
-		SortedMap<AntiChain, Long> functions = new TreeMap<AntiChain, Long>();			//number of antichains in 1 equivalence-class
+		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
 
 		timePair = doTime("Generated equivalence classes at ",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
@@ -91,8 +91,8 @@ public class M {
 			for (int i=0;i<classes.length;i++) {
 				long coeff = SmallBasicSet.combinations(n, i);
 				for (BigInteger b : classes[i].keySet()) {
-					Storage.store(functions, AntiChain.decode(b),classes[i].get(b)*coeff);
-					ps.println(AntiChain.decode(b) + "," + classes[i].get(b)*coeff);
+					Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
+					ps.println(SmallAntiChain.decode(b) + "," + classes[i].get(b)*coeff);
 				}	
 			}
 
@@ -104,11 +104,11 @@ public class M {
 		timePair = doTime("Collected equivalence classes at ",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
-		AntiChain e = AntiChain.emptyFunction();
-		AntiChain u = AntiChain.oneSetFunction(SmallBasicSet.universe(n));
-		SortedMap<AntiChain, BigInteger> leftIntervalSize = new TreeMap<AntiChain, BigInteger>();
-		SortedMap<AntiChain, BigInteger> rightIntervalSize = new TreeMap<AntiChain, BigInteger>();
-		for (AntiChain f : functions.keySet()) {
+		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(n));
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		for (SmallAntiChain f : functions.keySet()) {
 			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
 			//TODO: time gain for calculating rightIntervalSizes in PCThread?
 			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
@@ -181,12 +181,12 @@ public class M {
 		// test
 		long evaluations = 0;
 		long newEvaluations = 0;
-		Iterator<AntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
+		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
 		
 		Collector collector = new Collector(cores);
 
 		while (it2.hasNext()) {
-			AntiChain r2 = it2.next();
+			SmallAntiChain r2 = it2.next();
 			new PCThread(r2, functions, leftIntervalSize, rightIntervalSize, collector).start();
 			newEvaluations += collector.iterations();
 			if (newEvaluations > reportRate) {

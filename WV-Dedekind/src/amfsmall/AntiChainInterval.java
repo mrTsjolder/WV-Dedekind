@@ -6,29 +6,34 @@ import java.util.NoSuchElementException;
 import posets.SetsPoset;
 
 /**
- * An interval of antimonotonic functions
+ * An interval of antichains
  * @author u0003471
  *
  */
-public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiChainInterval> {
+public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<AntiChainInterval> {
 	
-	/**
+	/*
 	 * an interval is described by its lower bound (from) and upper bound (till)
 	 * it may be ]..[,[..[,]..],[..] depending on closed[Below,Above]
 	 */
-	private AntiChain from;
-	private AntiChain till;
+	private SmallAntiChain from;
+	private SmallAntiChain till;
 	private boolean closedBelow;
 	private boolean closedAbove;
 
 	/**
-	 * Create an interval of antimonotonic functions with given limits and closed or open brackets
-	 * @param bottom : lower limit
-	 * @param top : upper limit
-	 * @param closedBottom : true if closed at lower limit
-	 * @param closedTop : true if closed at upper limit
+	 * Create an interval of antichains with given limits and closed or open brackets
+	 * 
+	 * @param 	bottom
+	 * 			lower limit
+	 * @param 	top
+	 * 			upper limit
+	 * @param 	closedBottom
+	 * 			true if closed at lower limit
+	 * @param 	closedTop
+	 * 			true if closed at upper limit
 	 */
-	public AntiChainInterval(AntiChain bottom,AntiChain top,boolean closedBottom,boolean closedTop) {
+	public AntiChainInterval(SmallAntiChain bottom,SmallAntiChain top,boolean closedBottom,boolean closedTop) {
 		from = bottom;
 		till = top;
 		closedBelow = closedBottom;
@@ -36,24 +41,27 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	}
 
 	/**
-	 * Create a closed interval of antimonotonic functions with given limits and closed or open brackets
-	 * @param bottom : lower limit
-	 * @param top : upper limit
+	 * Create a closed interval of antichains with given limits and closed or open brackets
+	 * 
+	 * @param 	bottom
+	 * 			lower limit
+	 * @param 	top
+	 * 			upper limit
 	 */
-	public AntiChainInterval(AntiChain bottom,AntiChain top) {
+	public AntiChainInterval(SmallAntiChain bottom,SmallAntiChain top) {
 		this(bottom,top,true,true);
 	}
 	
 	/**
-	 * The Antimonotonic at the bottom of the interval 
+	 * The antichain at the bottom of the interval 
 	 */
-	public AntiChain getBottom() {
+	public SmallAntiChain getBottom() {
 		return from;
 	}
 	/**
-	 * The Antimonotonic at the top of the interval 
+	 * The antichain at the top of the interval 
 	 */
-	public AntiChain getTop() {
+	public SmallAntiChain getTop() {
 		return till;
 	}
 	/**
@@ -73,12 +81,12 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	 * iterator delegates to closed iterator
 
 	 */
-	public Iterator<AntiChain> iterator() {
+	public Iterator<SmallAntiChain> iterator() {
 		// empty interval?
 		if (!getBottom().le(getTop()) ||
 				getBottom().equals(getTop()) 
 				&& (!isClosedAtBottom() || !isClosedAtTop())) // interval is empty
-			return new Iterator<AntiChain>() {
+			return new Iterator<SmallAntiChain>() {
 			
 			@Override
 			public boolean hasNext() {
@@ -86,7 +94,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 			
 			@Override
-			public AntiChain next() {
+			public SmallAntiChain next() {
 				return null;
 			}
 			
@@ -96,15 +104,15 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 					
 		};
 		if (isClosedAtTop()) {
-			Iterator<AntiChain> theIt = closedIterator();
+			Iterator<SmallAntiChain> theIt = closedIterator();
 			if (!isClosedAtBottom()) theIt.next();
 			return theIt;
 		}
-		else return new Iterator<AntiChain>() {
+		else return new Iterator<SmallAntiChain>() {
 
 			boolean thereIsNext;
-			Iterator<AntiChain> theIt = closedIterator();
-			AntiChain nxt = null;
+			Iterator<SmallAntiChain> theIt = closedIterator();
+			SmallAntiChain nxt = null;
 			{
 				if (!isClosedAtBottom()) theIt.next();
 				if (theIt.hasNext()) {
@@ -120,8 +128,8 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
-				AntiChain myNxt = nxt;
+			public SmallAntiChain next() {
+				SmallAntiChain myNxt = nxt;
 				nxt = theIt.next();
 				thereIsNext = theIt.hasNext();
 				return myNxt;
@@ -137,12 +145,12 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	}
 	
 	/**
-	 *
 	 * iterator ignoring the boundaries
-	 * @pre getBottom().le(getTop())
-	 * @return an iterator ignoring the boundaries
+	 * 
+	 * @pre 	getBottom().le(getTop())
+	 * @return 	an iterator ignoring the boundaries
 	 */
-	private Iterator<AntiChain> closedIterator() {
+	private Iterator<SmallAntiChain> closedIterator() {
 
 		/*
 		 * case lower limit is empty
@@ -151,11 +159,11 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			return exceptionalClosedIterator();
 		}
 		final SmallBasicSet span = getTop().sp();
-		if (span.size()<=1) return new Iterator<AntiChain>() {
+		if (span.size()<=1) return new Iterator<SmallAntiChain>() {
 /*
  * Iterator in the case of dimension 1 or 0, explicitly computed
  */
-			private AntiChain[] theList;
+			private SmallAntiChain[] theList;
 			private int pos, last;
 			{
 				if (getBottom().size() == 0) pos = 0;
@@ -167,39 +175,39 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 				else last = 2;
 				
 				if (pos <= last) {
-					theList = new AntiChain[last + 1];
+					theList = new SmallAntiChain[last + 1];
 					if (pos == 0) {
-						AntiChain amf;
-						theList[0] = new AntiChain(getUniverse()); // empty function
+						SmallAntiChain amf;
+						theList[0] = SmallAntiChain.emptyAntiChain(getUniverse()); // empty function
 						if (last > 0) {
-							amf = new AntiChain();
+							amf = new SmallAntiChain();
 							amf.add(SmallBasicSet.emptySet()); // empty set
 							theList[1] = amf;
 						}
 						if (last > 1) {
-							amf = new AntiChain(getUniverse());
+							amf = SmallAntiChain.emptyAntiChain(getUniverse());
 							amf.add(span); // set with one element
 							theList[2] = amf;
 						}
 					}
 					else if (pos == 1) {
-						AntiChain amf;
+						SmallAntiChain amf;
 						if (last > 0) {
-							amf = new AntiChain(getUniverse());
+							amf = SmallAntiChain.emptyAntiChain(getUniverse());
 							amf.add(SmallBasicSet.emptySet()); // empty set
 							theList[1] = amf;
 						}
 						if (last > 1) {
-							amf = new AntiChain(getUniverse());
+							amf = SmallAntiChain.emptyAntiChain(getUniverse());
 							amf.add(span); // set with one element
 							theList[2] = amf;
 						}
 						
 					}
 					else /* pos == 2 */ {
-						AntiChain amf;
+						SmallAntiChain amf;
 						if (last > 1) {
-							amf = new AntiChain(getUniverse());
+							amf = SmallAntiChain.emptyAntiChain(getUniverse());
 							amf.add(span); // set with one element
 							theList[2] = amf;
 						}
@@ -213,7 +221,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
+			public SmallAntiChain next() {
 				return theList[pos++];
 			}
 
@@ -225,7 +233,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		};
 		if (getTop().equals(getBottom())) {
 			// iterator for one element
-			return new Iterator<AntiChain>() {
+			return new Iterator<SmallAntiChain>() {
 
 				boolean given;
 				{
@@ -237,7 +245,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 				}
 
 				@Override
-				public AntiChain next() {
+				public SmallAntiChain next() {
 					given = true;
 					return getBottom();
 				}
@@ -258,7 +266,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 				&& getBottom().size() == spanSize
 				&& minSizeBottom + 1 == spanSize) {
 			// irreducible interval of two elements
-			return new Iterator<AntiChain>() {
+			return new Iterator<SmallAntiChain>() {
 
 				int pos = 0;
 				@Override
@@ -267,7 +275,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 				}
 
 				@Override
-				public AntiChain next() {
+				public SmallAntiChain next() {
 					pos++;
 					if (pos == 1) return getBottom();
 					if (pos == 2) return getTop();
@@ -287,19 +295,19 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		 * compute optimal split of the spaces represented by 'axes'
 		 */
 		final SmallBasicSet[] axes = bestSplit();
-		return new Iterator<AntiChain>() {
+		return new Iterator<SmallAntiChain>() {
 
 /**
  * Iterator general case is reduced to the twice half the dimension
  */
-			Iterator<AntiChain> X;
-			Iterator<AntiChain> Y;
+			Iterator<SmallAntiChain> X;
+			Iterator<SmallAntiChain> Y;
 			AntiChainInterval Xaxis = new AntiChainInterval(getBottom().project(axes[0]),
 						getTop().project(axes[0]),true,true);
 			AntiChainInterval Yaxis = new AntiChainInterval(getBottom().project(axes[1]),
 						getTop().project(axes[1]),true,true);
-			Iterator<AntiChain> current;
-			AntiChain currentX, currentY;
+			Iterator<SmallAntiChain> current;
+			SmallAntiChain currentX, currentY;
 			{
 				X = Xaxis.iterator();
 				Y = Yaxis.iterator();
@@ -307,11 +315,11 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 					currentX = X.next();
 					currentY = Y.next();
 					current = 
-						new AntiChainInterval(currentX.plus(currentY).plus(getBottom()),
-								currentX.times(currentY).dot(getTop()),true,true).iterator();
+						new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
+								(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
 				}
-				else current = new AntiChainInterval(new AntiChain(),
-						new AntiChain(),false,false).iterator(); // iterator on an empty interval
+				else current = new AntiChainInterval(new SmallAntiChain(),
+						new SmallAntiChain(),false,false).iterator(); // iterator on an empty interval
 			}
 			@Override
 			public boolean hasNext() {
@@ -319,13 +327,13 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
+			public SmallAntiChain next() {
 				if (current.hasNext()) return current.next();
 				if (X.hasNext()) {
 					currentX = X.next();
 					current = 
-						new AntiChainInterval(currentX.plus(currentY).plus(getBottom()),
-								currentX.times(currentY).dot(getTop()),true,true).iterator();
+						new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
+								(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
 					return current.next();
 				}
 				else if (Y.hasNext()) /* should always be true */ {
@@ -334,8 +342,8 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 						currentX = X.next();
 						currentY = Y.next();
 						current = 
-							new AntiChainInterval(currentX.plus(currentY).plus(getBottom()),
-									currentX.times(currentY).dot(getTop()),true,true).iterator();
+							new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
+									(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
 						return current.next();
 					}
 				}
@@ -356,14 +364,14 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		return getTop().getUniverse();
 	}
 
-	private Iterator<AntiChain> exceptionalClosedIterator() {
-		return new Iterator<AntiChain>() {
-			AntiChain bottom;
+	private Iterator<SmallAntiChain> exceptionalClosedIterator() {
+		return new Iterator<SmallAntiChain>() {
+			SmallAntiChain bottom;
 			boolean virgin;
-			Iterator<AntiChain> normal ;
+			Iterator<SmallAntiChain> normal ;
 
 			{
-				bottom = new AntiChain();
+				bottom = new SmallAntiChain();
 				bottom.add(SmallBasicSet.emptySet());
 				virgin = true;
 				normal = new AntiChainInterval(bottom,getTop(),true,true).closedIterator();
@@ -374,7 +382,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
+			public SmallAntiChain next() {
 				if (virgin) {
 					virgin = false;
 					return getBottom();
@@ -391,7 +399,8 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	/**
 	 * produce a split of the universe that produces two non empty intervals of which at least one
 	 * is non singleton
-	 * @pre size() >= 3
+	 * 
+	 * @pre 	size() >= 3
 	 * @return
 	 */
 	public SmallBasicSet[] bestSplit() {
@@ -402,7 +411,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		if (getTop().size() > 1) {
 			// easy case. Look for a set in getTop with size about half the span of getTop
 			// that is not in getBottom
-			AntiChain difference = getTop().minus(getBottom());
+			SmallAntiChain difference = getTop().minus(getBottom());
 			long value = spanSize;
 			for (SmallBasicSet a : difference)
 				if (Math.abs(a.size() - spanSize/2) < value) {
@@ -428,7 +437,6 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	 * interface to compute a suitable subset for splitting
 	 * the span of an algorithm such that the algorithm can 
 	 * be decomposed
-	 *
 	 */
 	public interface SubsetFinder {
 		/**
@@ -436,14 +444,18 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		 * with size about target (indicative)
 		 * this problem is in principle np-hard
 		 * any approximation is acceptable
-		 * @pre bottom not an immediate predecessor of {span}
-		 * @param span : the mother set
-		 * @param target : the approximate size wanted
-		 * @param bottom : the AntiChain in which the answer cannot be contained
-		 * @return null if span le bottom
-		 * @return the suset of span with the closest size to target not contained in bottom
+		 * 
+		 * @param 	span
+		 * 			the mother set
+		 * @param 	target
+		 * 			the approximate size wanted
+		 * @param 	bottom
+		 * 			the AntiChain in which the answer cannot be contained
+		 * @pre 	bottom not an immediate predecessor of {span}
+		 * @return 	null if span le bottom
+		 * @return 	the subset of span with the closest size to target not contained in bottom
 		 */
-		SmallBasicSet bestSubset(SmallBasicSet span, long target, AntiChain bottom);
+		SmallBasicSet bestSubset(SmallBasicSet span, long target, SmallAntiChain bottom);
 	};
 	
 	private SubsetFinder finder = new SubsetFinder() {
@@ -460,7 +472,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		 * @return null if span le bottom
 		 * @return the suset of span with the closest size to target not contained in bottom
 		 */
-		public SmallBasicSet bestSubset(SmallBasicSet span, long target, AntiChain bottom) {
+		public SmallBasicSet bestSubset(SmallBasicSet span, long target, SmallAntiChain bottom) {
 
 			SmallBasicSet best = null;
 			long value = 2*target;
@@ -487,12 +499,13 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 
 	/**
 	 * returns the interval [{},{N}]
-	 * @param n
-	 * @return
+	 * 
+	 * @param 	n
+	 * @return	
 	 */
 	public static AntiChainInterval fullSpace(int n) {
 		SmallBasicSet N = SmallBasicSet.universe(n);
-		return new AntiChainInterval(AntiChain.emptyFunction(N), AntiChain.universeFunction(n));
+		return new AntiChainInterval(SmallAntiChain.emptyAntiChain(N), SmallAntiChain.universeAntiChain(n));
 	}
 
 	public long latticeSize() {
@@ -505,16 +518,17 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 
 	/**
 	 * compute an intervaliterator working by dynamic programming on the last element of the span
-	 * @pre interval is not empty
-	 * @param interval
-	 * @return
+	 * 
+	 * @param 	interval
+	 * @pre 	interval is not empty
+	 * @return	
 	 */
-	private Iterator<AntiChain> fastNonEmptyIterator() {
+	private Iterator<SmallAntiChain> fastNonEmptyIterator() {
 		final AntiChainInterval interval = this;
 		SmallBasicSet span = interval.getTop().sp();
-		if (span.isEmpty()) return new Iterator<AntiChain>() {
+		if (span.isEmpty()) return new Iterator<SmallAntiChain>() {
 			// empty span interval case. At most two elements
-			private AntiChain current = interval.getBottom();
+			private SmallAntiChain current = interval.getBottom();
 
 			@Override
 			public boolean hasNext() {
@@ -522,8 +536,8 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
-				AntiChain ret = current;
+			public SmallAntiChain next() {
+				SmallAntiChain ret = current;
 				if (current.equals(interval.getTop())) current = null;
 				else current = interval.getTop();
 				return ret;
@@ -535,29 +549,29 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 			
 		};
-		return new Iterator<AntiChain>() {
+		return new Iterator<SmallAntiChain>() {
 
 			// non empty span
 			private SmallBasicSet span = interval.getTop().sp();
-			private AntiChain maxSpan = AntiChain.singletonFunction(span.maximum());
-			private AntiChain current = interval.getBottom();
-			private AntiChain[] alfaBottom = current.reduce(span);
-			private AntiChain[] alfaTop = interval.getTop().reduce(span);
+			private SmallAntiChain maxSpan = SmallAntiChain.singletonAntiChain(span.maximum());
+			private SmallAntiChain current = interval.getBottom();
+			private SmallAntiChain[] alfaBottom = current.reduce(span);
+			private SmallAntiChain[] alfaTop = interval.getTop().reduce(span);
 
-			private AntiChain[] alfa = new AntiChain[2];
+			private SmallAntiChain[] alfa = new SmallAntiChain[2];
 			@SuppressWarnings("unchecked")
-			private Iterator<AntiChain>[] iterator = new Iterator[2];
+			private Iterator<SmallAntiChain>[] iterator = new Iterator[2];
 			{ 
 				iterator[0] = new AntiChainInterval(alfaBottom[0],alfaTop[0]).fastIterator();
 				alfa[0] = iterator[0].next();
-				iterator[1] = new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])).fastIterator();
+				iterator[1] = new AntiChainInterval(alfaBottom[1],(SmallAntiChain) alfa[0].meet(alfaTop[1])).fastIterator();
 				alfa[1] = iterator[1].next();
 			};
 
-			private AntiChain nextCurrent() {
+			private SmallAntiChain nextCurrent() {
 				// problem with times
 				if (alfa[1].isEmpty()) return alfa[0];
-				else return alfa[0].join(alfa[1].times(maxSpan));
+				else return (SmallAntiChain) alfa[0].join(alfa[1].times(maxSpan));
 			}
 
 			@Override
@@ -566,15 +580,15 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 			}
 
 			@Override
-			public AntiChain next() {
-				AntiChain ret = current;
+			public SmallAntiChain next() {
+				SmallAntiChain ret = current;
 				if (iterator[1].hasNext()) {
 					alfa[1] = iterator[1].next();
 					current = nextCurrent();
 				}
 				else if (iterator[0].hasNext()) {
 					alfa[0] = iterator[0].next();
-					iterator[1] = new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])).fastIterator();
+					iterator[1] = new AntiChainInterval(alfaBottom[1],(SmallAntiChain) alfa[0].meet(alfaTop[1])).fastIterator();
 					if (!iterator[1].hasNext()) current = null;
 					else { 
 						alfa[1] = iterator[1].next();
@@ -599,11 +613,11 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 	 * iterates over the closed interval independently of isClosed...()
 	 * @return an iterator that is about 4 times as fast as the normal iterator
 	 */
-	public Iterator<AntiChain> fastIterator() {
+	public Iterator<SmallAntiChain> fastIterator() {
 		if (getBottom().le(getTop())) return fastNonEmptyIterator();
 		else {
 			// empty interval
-			return new Iterator<AntiChain>() {
+			return new Iterator<SmallAntiChain>() {
 
 				// no next!
 				
@@ -613,7 +627,7 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 				}
 
 				@Override
-				public AntiChain next() {
+				public SmallAntiChain next() {
 					throw new NoSuchElementException();
 				}
 
@@ -632,6 +646,19 @@ public class AntiChainInterval implements Iterable<AntiChain>,Comparable<AntiCha
 		if (c == 0) c = this.getTop().compareTo(o.getTop());
 		return c;
 	}
-
+	
+	/**
+	 * return a string describing the interval
+	 * with lower and upper limit and brackets
+	 */
+	public String toString() { 
+		String res = "";
+		if (isClosedAtBottom()) res += "[";
+		else res += "]";
+		res += getBottom() + ", " + getTop();
+		if (isClosedAtTop()) res += "]";
+		else res += "[";
+		return res;
+	}
 
 }

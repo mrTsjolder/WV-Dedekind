@@ -300,8 +300,8 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 		return (theSet | getBit(f)) == theSet;
 	}
 
-	public AntiChain immediateSubSets() {
-		AntiChain res = new AntiChain();
+	public SmallAntiChain immediateSubSets() {
+		SmallAntiChain res = new SmallAntiChain();
 		for (int x:this) res.add(this.minus(x));
 		return res;
 	}

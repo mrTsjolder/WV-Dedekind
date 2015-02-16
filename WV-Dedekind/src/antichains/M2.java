@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import amfsmall.AntiChain;
+import amfsmall.SmallAntiChain;
 import amfsmall.AntiChainInterval;
 import amfsmall.SmallBasicSet;
 import amfsmall.SyntaxErrorException;
@@ -20,21 +20,21 @@ public class M2 {
 	public final int cores;
 
 	static private SmallBasicSet[] N;
-	static private AntiChain[] fN;
+	static private SmallAntiChain[] fN;
 	static private AntiChainInterval[] iS;
 	
 	public M2(int n, int coresUsed) throws SyntaxErrorException {
 		dedekind = n;
 		
 		N = new SmallBasicSet[n];
-		fN = new AntiChain[n];
+		fN = new SmallAntiChain[n];
 		iS = new AntiChainInterval[n];
 
 		String basic = "";
 		for (int i = 1;i< n;i++) {
 			basic += i + ", ";
 			N[i] = SmallBasicSet.parser().parse("[" + basic.subSequence(0, basic.length()-1) + "]");
-			fN[i] = AntiChain.oneSetFunction(N[i]);
+			fN[i] = SmallAntiChain.oneSetAntiChain(N[i]);
 			iS[i] = AntiChainInterval.fullSpace(i);
 		}
 		
@@ -69,19 +69,19 @@ public class M2 {
 		int n = dedekind - 3;
 		int reportRate = 10;
 		
-		ArrayList<AntiChain> functions = new ArrayList<>();
+		ArrayList<SmallAntiChain> functions = new ArrayList<>();
 		
-		AntiChain e = AntiChain.emptyFunction();
-		AntiChain u = AntiChain.oneSetFunction(SmallBasicSet.universe(n));
+		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(n));
 
-		Iterator<AntiChain> it = new AntiChainInterval(e,u).fastIterator();
+		Iterator<SmallAntiChain> it = new AntiChainInterval(e,u).fastIterator();
 		while(it.hasNext()) {
 			functions.add(it.next());
 		}
 		
 		SortedMap<AntiChainInterval, BigInteger> intervalSizes = new TreeMap<AntiChainInterval, BigInteger>();
-		for (AntiChain f : functions) {
-			for (AntiChain g : functions) {
+		for (SmallAntiChain f : functions) {
+			for (SmallAntiChain g : functions) {
 				if(f.le(g)) {
 					AntiChainInterval interval = new AntiChainInterval(f,g);
 					intervalSizes.put(interval, BigInteger.valueOf(interval.latticeSize()));
@@ -98,7 +98,7 @@ public class M2 {
 				
 		Collector collector = new Collector(cores);
 
-		for(AntiChain r2 : functions) {
+		for(SmallAntiChain r2 : functions) {
 			new PCThread2(r2, functions, intervalSizes, collector).start();
 			newEvaluations += collector.iterations();
 			if (newEvaluations > reportRate) {

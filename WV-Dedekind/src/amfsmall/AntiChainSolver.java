@@ -8,7 +8,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Solver class for systems of equations in AntiChains
+ * Solver class for systems of equations in SmallAntiChains
  * 
  * @author patrickdecausmaecker
  *
@@ -17,11 +17,12 @@ public class AntiChainSolver {
 	
 	/**
 	 * far more sophisticated version of PatricksCoefficient
-	 * @param r1
-	 * @param r2
+	 * 
+	 * @param 	r1
+	 * @param 	r2
 	 * @return
 	 */
-	public static BigInteger PatricksCoefficient(AntiChain r1, AntiChain r2) {
+	public static BigInteger PatricksCoefficient(SmallAntiChain r1, SmallAntiChain r2) {
 		// trivial case, no solutions unless r1 <= r2
 		if (!r1.le(r2)) return BigInteger.ZERO;
 		// trivial case, one solution if r1 == r2
@@ -34,7 +35,7 @@ public class AntiChainSolver {
 		return BigInteger.valueOf(1<<(CountConnected(graph(r1,r2.minus(r1)))));
 	}
 	
-	private static SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> graph(AntiChain r1, AntiChain r2) {
+	private static SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> graph(SmallAntiChain r1, SmallAntiChain r2) {
 		SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> ret = new TreeMap<SmallBasicSet, SortedSet<SmallBasicSet>>();
 		for (SmallBasicSet r : r2) {
 			SortedSet<SmallBasicSet> cr = new TreeSet<SmallBasicSet>();
@@ -69,16 +70,17 @@ public class AntiChainSolver {
 	 * compute the equivalences of AMF(n) for n = 0 .. till inclusive
 	 * in BigInteger representation
 	 * This is based on algorithm 9 in "Ten Beuatiful formula..."
-	 * @param till
-	 * @return array of maps, mapping each biginteger to the size of the equivalence class it represents
-	 * @throws SyntaxErrorException
+	 * 
+	 * @param 	till
+	 * @return 	array of maps, mapping each biginteger to the size of the equivalence class it represents
+	 * @throws 	SyntaxErrorException
 	 */
 	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till) throws SyntaxErrorException {
 		@SuppressWarnings("unchecked")
 		SortedMap<BigInteger, Long>[] reS = new TreeMap[till+1];
 		reS[0] = new TreeMap<BigInteger,Long>();
-		Storage.store(reS[0],AntiChain.emptyFunction().standard().encode());
-		Storage.store(reS[0],AntiChain.emptySetFunction().standard().encode());
+		Storage.store(reS[0],SmallAntiChain.emptyAntiChain().standard().encode());
+		Storage.store(reS[0],SmallAntiChain.emptySetAntiChain().standard().encode());
 		int n = 0;
 		while (n < till) {
 			reS[n+1] = algorithm7(n,reS[n]);
@@ -91,25 +93,29 @@ public class AntiChainSolver {
 	 * (this is algorithm 7 in "Ten Beautiful formula...")
 	 * Computing the representatives of AM F (n + 1) with span n + 1 from the representatives of AMF(n) 
 	 * with span n and the sizes of the corresponding equivalence classes
-	 * @param n the dimension of the given set of equivalence classes
-	 * @param S mapping the equivalence classes of dimension n (in BigInteger representation) to their sizes
-	 * @return return maps the equivalence classes of dimensions n+1 (in BigInteger representation) to their sizes
+	 * 
+	 * @param	n 
+	 * 			the dimension of the given set of equivalence classes
+	 * @param 	S 
+	 * 			mapping the equivalence classes of dimension n (in BigInteger representation) to their sizes
+	 * @return 	return maps the equivalence classes of dimensions n+1 (in BigInteger representation) to their sizes
 	 */
 	private static SortedMap<BigInteger,Long> algorithm7(long n, SortedMap<BigInteger, Long> S) {
 		SortedMap<BigInteger,Long> S1 = new TreeMap<BigInteger, Long>();
-		AntiChain alfa = AntiChain.universeFunction((int) n);
-		AntiChain u = AntiChain.universeFunction((int) (n+1));
-		AntiChain l = AntiChain.singletonFunction((int) (n+1));
+		SmallAntiChain alfa = SmallAntiChain.universeAntiChain((int) n);
+		SmallAntiChain u = SmallAntiChain.universeAntiChain((int) (n+1));
+		SmallAntiChain l = SmallAntiChain.singletonAntiChain((int) (n+1));
 		for (BigInteger tCode : S.keySet()) {
-			AntiChain t = AntiChain.decode(tCode);
-			Set<int[]> rtsymm = t.join(l).symmetryGroup();
+			SmallAntiChain t = SmallAntiChain.decode(tCode);
+			Set<int[]> rtsymm = ((SmallAntiChain) t.join(l)).symmetryGroup();
 			SortedMap<BigInteger, Long> St = new TreeMap<BigInteger, Long>();
-			for (AntiChain x : new AntiChainInterval(t.join(l),u.omicron(t, alfa))) {
+			//TODO: lose deprecated...
+			for (SmallAntiChain x : new AntiChainInterval((SmallAntiChain) t.join(l),u.omicron(t, alfa))) {
 				BigInteger b = x.standard(rtsymm).encode(); 
 				Storage.store(St, b);
 			}
 			for (BigInteger b : St.keySet()) {
-				AntiChain x = AntiChain.decode(b);
+				SmallAntiChain x = SmallAntiChain.decode(b);
 				BigInteger code = x.standard().encode();
 				Storage.store(S1,code,St.get(b)*S.get(tCode));
 			}

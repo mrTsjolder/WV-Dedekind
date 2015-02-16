@@ -11,7 +11,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import amfsmall.AntiChainInterval;
-import amfsmall.AntiChain;
+import amfsmall.SmallAntiChain;
 import amfsmall.SmallBasicSet;
 
 public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
@@ -33,9 +33,10 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 	}
 	
 	/**
-	 * Build a poset of sets from an interval of AMF
+	 * Build a poset of sets from an interval of AC
 	 * this = {A subseteq fint.sp()|fint.getBottom() < {A} V fint.getBottom() <= fint.getTop()}
-	 * @param fint
+	 * 
+	 * @param 	fint
 	 */
 	@SuppressWarnings("unchecked")
 	public SetsPoset(AntiChainInterval fint) {
@@ -46,12 +47,12 @@ public class SetsPoset extends SimplePosetSize<SmallBasicSet> {
 		after = new TreeMap<SmallBasicSet,SortedSet<SmallBasicSet>> ();
 //		symmetries = fint.symmetryGroup();
 		
-		AntiChain h = fint.getTop();
+		SmallAntiChain h = fint.getTop();
 		if (h.gt(fint.getBottom())) {
 			minSize = Integer.MAX_VALUE;
 			maxSize = Integer.MIN_VALUE;
 			while (!h.equals(fint.getBottom())) {
-				AntiChain hh = new AntiChain();
+				SmallAntiChain hh = new SmallAntiChain();
 				for (SmallBasicSet a : h) 
 					if (fint.getBottom().contains(a)) hh.addConditionally(a);
 					else {
