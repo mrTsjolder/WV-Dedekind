@@ -51,7 +51,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 
 	private static SmallAntiChain emptyAntiChain = new SmallAntiChain();
 	private static SmallAntiChain emptySetAntiChain = new SmallAntiChain();
-		static {emptySetAntiChain.theAntiChain.set(1);}
+		static {emptySetAntiChain.theAntiChain.set(0);}
 	
 	public static SmallAntiChain emptyAntiChain() {
 		return new SmallAntiChain(emptyAntiChain);
@@ -120,59 +120,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	}
 	
 	/**
-	 * Add a set to this antichain
-	 * 
-	 * @param 	s
-	 * 			a set that's in the universe of this antichain
-	 * @return	true if set was added, false when s was no subset of this.getUniverse()
-	 */
-	public boolean add(SmallBasicSet s) {
-		if(universe.hasAsSubset(s)) {
-			theAntiChain.set(s.toIntRepresentation());
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * Remove a set from this antichain
-	 * 
-	 * @param 	s
-	 * 			the set to be removed from this antichain
-	 * @return 	true if set was succesfully deleted, false when this antichain didn't change
-	 */
-	public boolean remove(SmallBasicSet s) {
-		int temp = s.toIntRepresentation();
-		if(!theAntiChain.get(temp))
-			return false;
-		theAntiChain.set(temp, false);
-		return true;
-	}
-	
-	/**
-	 * Remove all sets in the collection from this antichain
-	 * 
-	 * @param 	c
-	 * 			the collection of sets to be removed
-	 * @return	true if something has been deleted, false otherwise
-	 */
-	public boolean removeAll(SmallAntiChain c) {
-		boolean result = false;
-		for(int i = c.theAntiChain.nextSetBit(0); i >= 0; i = c.theAntiChain.nextSetBit(i+1)) {
-			if(remove(new SmallBasicSet(i)) && !result)
-				result = true;
-		}
-		return result;
-	}
-	
-	/**
 	 * Add a set to this antichain, so that the resulting antichain is 
 	 * the supremum of the union of this and {x}.
 	 * 
 	 * @param 	x
 	 * 			The set to be added
 	 */
-	private void addConditionally(SmallBasicSet x) {
+	public void addConditionally(SmallBasicSet x) {
 		SmallBasicSet a;
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
 			a = new SmallBasicSet(i);
@@ -189,7 +143,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * @param 	x
 	 * 			The antichain to be added
 	 */
-	private void addConditionallyAll(SmallAntiChain x) {
+	public void addConditionallyAll(SmallAntiChain x) {
 		for(int i = x.theAntiChain.nextSetBit(0); i >= 0; i = x.theAntiChain.nextSetBit(i+1)) {
 			addConditionally(new SmallBasicSet(i));
 		}
@@ -284,7 +238,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		for (int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
 			SmallBasicSet x = new SmallBasicSet(i);
 			boolean found = false;
-			for (int j = theAntiChain.nextSetBit(0); j >= 0; j = theAntiChain.nextSetBit(j+1)) 
+			for (int j = f.theAntiChain.nextSetBit(0); j >= 0; j = f.theAntiChain.nextSetBit(j+1)) 
 				if (new SmallBasicSet(j).hasAsSubset(x)) found = true;
 			if (!found) res.add(x);
 		}
@@ -311,6 +265,26 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		BigInteger bestCode = this.encode();
 		while (permutations.hasNext()) {
 			SmallAntiChain kand = this.map(permutations.next().snd);
+			BigInteger code = kand.encode();
+			if (code.compareTo(bestCode) < 0) {
+				best = kand;
+				bestCode = code;
+			}
+		}
+		return best;	
+	}
+
+	/**
+	 * find the minimal representation of this antichain
+	 * under the given set of permutation of the elements
+	 * 
+	 * @return the representant with with the smallest encoding
+	 */
+	public SmallAntiChain standard(Set<int[]> permutations) {
+		SmallAntiChain best = this;
+		BigInteger bestCode = this.encode();
+		for (int[] p : permutations) {
+			SmallAntiChain kand = this.map(p);
 			BigInteger code = kand.encode();
 			if (code.compareTo(bestCode) < 0) {
 				best = kand;
@@ -443,6 +417,85 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	}
 	
 	/********************************************************
+	 * Useful Set<SmallBasicSet> methods					*
+	 ********************************************************/
+	
+	/**
+	 * Add a set to this antichain
+	 * 
+	 * @param 	s
+	 * 			a set that's in the universe of this antichain
+	 * @return	true if set was added, false when s was no subset of this.getUniverse()
+	 */
+	public boolean add(SmallBasicSet s) {
+		if(universe.hasAsSubset(s)) {
+			theAntiChain.set(s.toIntRepresentation());
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Remove a set from this antichain
+	 * 
+	 * @param 	s
+	 * 			the set to be removed from this antichain
+	 * @return 	true if set was succesfully deleted, false when this antichain didn't change
+	 */
+	public boolean remove(SmallBasicSet s) {
+		int temp = s.toIntRepresentation();
+		if(!theAntiChain.get(temp))
+			return false;
+		theAntiChain.set(temp, false);
+		return true;
+	}
+	
+	/**
+	 * Remove all sets in the collection from this antichain
+	 * 
+	 * @param 	c
+	 * 			the collection of sets to be removed
+	 * @return	true if something has been deleted, false otherwise
+	 */
+	public boolean removeAll(SmallAntiChain c) {
+		boolean result = false;
+		for(int i = c.theAntiChain.nextSetBit(0); i >= 0; i = c.theAntiChain.nextSetBit(i+1)) {
+			if(remove(new SmallBasicSet(i)) && !result)
+				result = true;
+		}
+		return result;
+	}
+
+	/**
+	 * Check whether or not this set is contained in this antichain
+	 * 
+	 * @param 	a
+	 * 			The set to be checked
+	 * @return	theAntiChain.get(a.toIntRepresentation())
+	 */
+	public boolean contains(SmallBasicSet a) {
+		return theAntiChain.get(a.toIntRepresentation());
+	}
+
+	/**
+	 * Return the number of sets in this antichain
+	 * 
+	 * @return	the number of 1-bits in its representation.
+	 */
+	public int size() {
+		return theAntiChain.cardinality();
+	}
+	
+	/**
+	 * Check whether or not there is a set in this antichain
+	 * 
+	 * @return	this.size() != 0
+	 */
+	public boolean isEmpty() {
+		return this.size() == 0;
+	}
+	
+	/********************************************************
 	 * Implementing methods									*
 	 ********************************************************/
 	
@@ -494,7 +547,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 				((SmallAntiChain) e).theAntiChain.equals(SmallAntiChain.emptyAntiChain))
 			return SmallAntiChain.emptyAntiChain();
 		if(theAntiChain.equals(SmallAntiChain.emptySetAntiChain))
-			return new SmallAntiChain((AntiChain) e);
+			return new SmallAntiChain((SmallAntiChain) e);
 		if(((SmallAntiChain) e).theAntiChain.equals(SmallAntiChain.emptySetAntiChain))
 			return new SmallAntiChain(this);
 		
@@ -594,6 +647,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public int compareTo(SmallAntiChain o) {
+		//TODO: this.cardinality() - o.cardinality() possible?
 		Iterator<SmallBasicSet> s1 = this.iterator();
 		Iterator<SmallBasicSet> s2 = o.iterator();
 		while (s1.hasNext() && s2.hasNext()) {
@@ -615,7 +669,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	public Iterator<SmallBasicSet> iterator() {
 		return new Iterator<SmallBasicSet>() {
 			
-			private int current = 0;
+			private int current = -1;
 
 			@Override
 			public boolean hasNext() {
