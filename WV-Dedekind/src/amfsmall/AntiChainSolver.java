@@ -107,10 +107,10 @@ public class AntiChainSolver {
 		SmallAntiChain l = SmallAntiChain.singletonAntiChain((int) (n+1));
 		for (BigInteger tCode : S.keySet()) {
 			SmallAntiChain t = SmallAntiChain.decode(tCode);
-			Set<int[]> rtsymm = ((SmallAntiChain) t.join(l)).symmetryGroup();
+			Set<int[]> rtsymm = (t.join(l)).symmetryGroup();
 			SortedMap<BigInteger, Long> St = new TreeMap<BigInteger, Long>();
 			//TODO: lose deprecated...
-			for (SmallAntiChain x : new AntiChainInterval((SmallAntiChain) t.join(l),u.omicron(t, alfa))) {
+			for (SmallAntiChain x : new AntiChainInterval(t.join(l),u.omicron(t, alfa))) {
 				BigInteger b = x.standard(rtsymm).encode(); 
 				Storage.store(St, b);
 			}

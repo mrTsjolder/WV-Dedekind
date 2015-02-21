@@ -44,6 +44,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	public SmallAntiChain(long[] l) {
 		theAntiChain = BitSet.valueOf(l);
 	}
+	
+	/**
+	 * Create an empty antichain
+	 */
+	public SmallAntiChain() {
+		theAntiChain = new BitSet(1);
+	}
 
 	/********************************************************
 	 * Basic antichains	& other static methods				*
@@ -96,20 +103,20 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	public static SmallAntiChain decode(BigInteger b) {
 		SmallAntiChain result = new SmallAntiChain();
-		result.theAntiChain = BitSet.valueOf(b.toByteArray());
+		byte[] array = b.toByteArray();
+		byte temp;
+		for(int i = 1; i <= array.length / 2; i++) {
+			temp = array[i - 1];
+			array[i - 1] = array[array.length - i];
+			array[array.length - i] = temp;
+		}
+		result.theAntiChain = BitSet.valueOf(array);
 		return result;
 	}
 	
 	/********************************************************
 	 * Utilities											*
 	 ********************************************************/
-	
-	/**
-	 * Create an empty antichain
-	 */
-	public SmallAntiChain() {
-		theAntiChain = new BitSet(1);
-	}
 	
 	private void setUniverse(SmallBasicSet s) {
 		universe = s;
@@ -234,14 +241,8 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * 			which are not subsets of a set in f
 	 */
 	public SmallAntiChain minus(SmallAntiChain f) {
-		SmallAntiChain res = SmallAntiChain.emptyAntiChain(getUniverse());
-		for (int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
-			SmallBasicSet x = new SmallBasicSet(i);
-			boolean found = false;
-			for (int j = f.theAntiChain.nextSetBit(0); j >= 0; j = f.theAntiChain.nextSetBit(j+1)) 
-				if (new SmallBasicSet(j).hasAsSubset(x)) found = true;
-			if (!found) res.add(x);
-		}
+		SmallAntiChain res = new SmallAntiChain(this);
+		res.theAntiChain.andNot(f.theAntiChain);
 		return res;
 	}
 	
@@ -509,9 +510,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public LatticeElement join(LatticeElement e) {
+		return join((SmallAntiChain) e);
+	}
+	
+	protected SmallAntiChain join(SmallAntiChain ac) {
 		SmallAntiChain result = new SmallAntiChain(this);
 		//TODO: optie? result.theAntiChain.or(((SmallAntiChain) e).theAntiChain); ...
-		result.addConditionallyAll((SmallAntiChain) e);
+		result.addConditionallyAll(ac);
 		return result;
 	}
 
@@ -525,9 +530,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public LatticeElement meet(LatticeElement e) {
+		return meet((SmallAntiChain) e);
+	}
+	
+	protected SmallAntiChain meet(SmallAntiChain ac) {
 		SmallAntiChain result = SmallAntiChain.emptyAntiChain(this.getUniverse());
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
-			for(int j = ((SmallAntiChain) e).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e).theAntiChain.nextSetBit(j+1)) 
+			for(int j = ac.theAntiChain.nextSetBit(0); j >= 0; j = ac.theAntiChain.nextSetBit(j+1)) 
 				result.addConditionally(new SmallBasicSet(j).intersection(new SmallBasicSet(i)));
 		return result;
 	}
@@ -542,19 +551,23 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public LatticeElement times(LatticeElement e) {
+		return times((SmallAntiChain) e);
+	}
+	
+	protected SmallAntiChain times(SmallAntiChain ac) {
 		SmallAntiChain result = new SmallAntiChain(this);
 		if(theAntiChain.equals(SmallAntiChain.emptyAntiChain) || 
-				((SmallAntiChain) e).theAntiChain.equals(SmallAntiChain.emptyAntiChain))
+				ac.theAntiChain.equals(SmallAntiChain.emptyAntiChain))
 			return SmallAntiChain.emptyAntiChain();
 		if(theAntiChain.equals(SmallAntiChain.emptySetAntiChain))
-			return new SmallAntiChain((SmallAntiChain) e);
-		if(((SmallAntiChain) e).theAntiChain.equals(SmallAntiChain.emptySetAntiChain))
+			return new SmallAntiChain(ac);
+		if(ac.theAntiChain.equals(SmallAntiChain.emptySetAntiChain))
 			return new SmallAntiChain(this);
 		
 		SmallBasicSet x,y;
-		SmallBasicSet spthis = this.sp(), spe = ((SmallAntiChain) e).sp();
+		SmallBasicSet spthis = this.sp(), spe = ac.sp();
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
-			for(int j = ((SmallAntiChain) e).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e).theAntiChain.nextSetBit(j+1)) {
+			for(int j = ac.theAntiChain.nextSetBit(0); j >= 0; j = ac.theAntiChain.nextSetBit(j+1)) {
 				x = new SmallBasicSet(i);
 				y = new SmallBasicSet(j);
 				result.addConditionally(x.minus(spe).union(y.minus(spthis)).union(x.intersection(y)));
@@ -591,11 +604,15 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * 
 	 * @param 	other
 	 * 			The antichain to comare with
-	 * @return 	true iff all sets in other are contained in at least one set in this
+	 * @return 	true iff all sets in e1 are contained in at least one set in this
 	 */
 	@Override
 	public boolean ge(LatticeElement e1) {
-		for(int i = ((SmallAntiChain) e1).theAntiChain.nextSetBit(0); i >= 0; i = ((SmallAntiChain) e1).theAntiChain.nextSetBit(i+1)) {
+		return ge((SmallAntiChain) e1);
+	}
+	
+	protected boolean ge(SmallAntiChain e1) {
+		for(int i = e1.theAntiChain.nextSetBit(0); i >= 0; i = e1.theAntiChain.nextSetBit(i+1)) {
 			if(!ge(new SmallBasicSet(i)))
 				return false;
 		}
@@ -607,14 +624,18 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * 
 	 * @param 	e1
 	 * 			The antichain to compare with
-	 * @return 	true iff all sets in this are contained in at least one set in other
+	 * @return 	true iff all sets in this are contained in at least one set in e1
 	 */
 	@Override
 	public boolean le(LatticeElement e1) {
+		return le((SmallAntiChain) e1);
+	}
+	
+	protected boolean le(SmallAntiChain e1) {
 		boolean ok;
 		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1)) {
 			ok = false;
-			for(int j = ((SmallAntiChain) e1).theAntiChain.nextSetBit(0); j >= 0; j = ((SmallAntiChain) e1).theAntiChain.nextSetBit(j+1))
+			for(int j = e1.theAntiChain.nextSetBit(0); j >= 0; j = e1.theAntiChain.nextSetBit(j+1))
 				if(new SmallBasicSet(j).hasAsSubset(new SmallBasicSet(i))) {
 					ok = true;
 					break;
@@ -629,7 +650,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * 
 	 * @param	e
 	 * 			The antichain to comare with
-	 * @return	true iff all sets in this are in all sets from the other
+	 * @return	true iff all sets in this are in all sets from e
 	 */
 	@Override
 	public boolean equals(LatticeElement e) {
@@ -657,6 +678,12 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		if (s1.hasNext()) return 1;
 		else if (s2.hasNext()) return -1;
 		else return 0;
+//		if(this.size() - o.size() != 0) 
+//			return this.size() - o.size();
+//		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
+//			if(theAntiChain.get(i) != o.theAntiChain.get(i))
+//				return (theAntiChain.get(i)) ? 1 : -1;
+//		return 0;
 	}
 
 	/**
@@ -705,6 +732,18 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	//TODO: delete
 	public static void main(String[] args) {
-		
+		SmallBasicSet a = new SmallBasicSet(12);
+		SmallBasicSet b = new SmallBasicSet(31);
+		SmallBasicSet c = new SmallBasicSet(7);
+		SmallAntiChain x = new SmallAntiChain();
+		x.add(a); x.add(b); x.add(c);
+		BigInteger big = x.encode();
+		long t1 = System.nanoTime();
+		int i = 0;
+		while(i++ < 1000000) {
+			SmallAntiChain.decode(big);
+		}
+		long t2 = System.nanoTime();
+		System.out.println("timed: " + (t2 - t1) / 1000000 + "ms");
 	}
 }

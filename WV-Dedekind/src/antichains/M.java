@@ -15,7 +15,6 @@ import amfsmall.AntiChainSolver;
 import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
-
 import mpi.*;
 
 /**
@@ -24,6 +23,8 @@ import mpi.*;
  *
  */
 public class M {
+	
+	public static final boolean USE_MPI = false;
 	
 	public final int dedekind;
 
@@ -117,67 +118,6 @@ public class M {
 		timePair = doTime("Generated interval sizes",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
-		/*try {
-			MPI.Init(null);
-			int myRank = MPI.COMM_WORLD.Rank();
-			int nOfProc = MPI.COMM_WORLD.Size();
-			String name = MPI.Get_processor_name();
-			
-			BigInteger sum = BigInteger.ZERO;
-			BigInteger buf = null;
-			
-			System.out.print(String.format("Process %d of %d is on processor %s\n", myRank, nOfProc, name));
-			
-			if(myRank == 0) {
-				Iterator<AntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
-				int i;
-				for(i = 1; i < nOfProc; i++) {
-					if(it2.hasNext()) 
-						MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, i, 0);
-				}
-				
-				while(it2.hasNext()) {
-					
-					Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-					sum.add(buf);
-					MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, stat.source, 0);
-				}
-				
-				for(int x = 1; x < nOfProc; x++) {
-					Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-					sum.add(buf);
-					MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, 666);
-				}
-				
-				System.out.println(sum);
-				
-			} else {
-				while(true) {
-					AntiChain function = null;
-					Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
-					if(stat.tag == 666) {
-						break;
-					}
-					BigInteger sumP = BigInteger.ZERO;
-					for (AntiChain r1:functions.keySet()) {
-						if (r1.le(function)) {
-							sumP = sumP.add(
-									BigInteger.valueOf(functions.get(r1)).multiply(
-										leftIntervalSize.get(r1)).multiply(
-										AntiChainSolver.PatricksCoefficient(r1, function))
-									);
-
-						}
-					}
-					MPI.COMM_WORLD.Send(sumP.multiply(rightIntervalSize.get(function.standard())), 0, 1, MPI.OBJECT, 0, 0);
-				}
-			}
-			
-			MPI.Finalize();
-		} catch(MPIException mpie) {
-			mpie.printStackTrace();
-		}*/
-		
 		// test
 		long evaluations = 0;
 		long newEvaluations = 0;
@@ -232,8 +172,106 @@ public class M {
 	}
 
 
-	public static void main(String[] args) throws NumberFormatException, SyntaxErrorException, InterruptedException {
-		new M(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
+	public static void main(String[] args) throws NumberFormatException, SyntaxErrorException, InterruptedException, MPIException {
+		if(!USE_MPI) {
+			new M(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
+		} else {
+			MPI.Init(null);
+			int myRank = MPI.COMM_WORLD.Rank();
+			int nOfProc = MPI.COMM_WORLD.Size();
+			
+			if(myRank == 0) {
+				master(Integer.parseInt(args[0]), nOfProc);
+			} else {
+				worker(nOfProc);
+			}
+		}
+	}
+	
+	private static void master(int dedekind, int nOfProc) throws SyntaxErrorException, MPIException {
+		int n = dedekind - 2;
+		BigInteger sum = BigInteger.ZERO;
+		BigInteger buf = null;
+		
+		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
+		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
+
+		PrintStream ps;
+		try {
+			ps = new PrintStream("EquivalenceClasses" + n);
+
+			// collect
+			for (int i=0;i<classes.length;i++) {
+				long coeff = SmallBasicSet.combinations(n, i);
+				for (BigInteger b : classes[i].keySet()) {
+					Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
+					ps.println(SmallAntiChain.decode(b) + "," + classes[i].get(b)*coeff);
+				}	
+			}
+
+			ps.close();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		
+		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(n));
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		for (SmallAntiChain f : functions.keySet()) {
+			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
+			//TODO: time gain for calculating rightIntervalSizes in PCThread?
+			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
+		}
+		
+		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
+		int i;
+		for(i = 1; i < nOfProc; i++) {
+			if(it2.hasNext()) 
+				MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, i, 0);
+		}
+		
+		while(it2.hasNext()) {
+			
+			Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			sum.add(buf);
+			MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, stat.source, 0);
+		}
+		
+		for(int x = 1; x < nOfProc; x++) {
+			Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			sum.add(buf);
+			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, 666);
+		}
+		
+		System.out.println(sum);
+	}
+	
+	private static void worker(int nOfProc) throws MPIException {
+		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();
+
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		
+		while(true) {
+			SmallAntiChain function = null;
+			Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
+			if(stat.tag == 666) {
+				break;
+			}
+			BigInteger sumP = BigInteger.ZERO;
+			for (SmallAntiChain r1:functions.keySet()) {
+				if (r1.le(function)) {
+					sumP = sumP.add(
+							BigInteger.valueOf(functions.get(r1)).multiply(
+								leftIntervalSize.get(r1)).multiply(
+								AntiChainSolver.PatricksCoefficient(r1, function))
+							);
+
+				}
+			}
+			MPI.COMM_WORLD.Send(sumP.multiply(rightIntervalSize.get(function.standard())), 0, 1, MPI.OBJECT, 0, 0);
+		}
 	}
 
 }

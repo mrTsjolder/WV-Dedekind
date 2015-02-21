@@ -315,8 +315,8 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 					currentX = X.next();
 					currentY = Y.next();
 					current = 
-						new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
-								(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
+						new AntiChainInterval(currentX.join(currentY).join(getBottom()),
+								currentX.times(currentY).meet(getTop()),true,true).iterator();
 				}
 				else current = new AntiChainInterval(new SmallAntiChain(),
 						new SmallAntiChain(),false,false).iterator(); // iterator on an empty interval
@@ -332,8 +332,8 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 				if (X.hasNext()) {
 					currentX = X.next();
 					current = 
-						new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
-								(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
+						new AntiChainInterval(currentX.join(currentY).join(getBottom()),
+								currentX.times(currentY).meet(getTop()),true,true).iterator();
 					return current.next();
 				}
 				else if (Y.hasNext()) /* should always be true */ {
@@ -342,8 +342,8 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 						currentX = X.next();
 						currentY = Y.next();
 						current = 
-							new AntiChainInterval((SmallAntiChain) currentX.join(currentY).join(getBottom()),
-									(SmallAntiChain) currentX.times(currentY).meet(getTop()),true,true).iterator();
+							new AntiChainInterval(currentX.join(currentY).join(getBottom()),
+									currentX.times(currentY).meet(getTop()),true,true).iterator();
 						return current.next();
 					}
 				}
@@ -564,14 +564,14 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 			{ 
 				iterator[0] = new AntiChainInterval(alfaBottom[0],alfaTop[0]).fastIterator();
 				alfa[0] = iterator[0].next();
-				iterator[1] = new AntiChainInterval(alfaBottom[1],(SmallAntiChain) alfa[0].meet(alfaTop[1])).fastIterator();
+				iterator[1] = new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])).fastIterator();
 				alfa[1] = iterator[1].next();
 			};
 
 			private SmallAntiChain nextCurrent() {
 				// problem with times
 				if (alfa[1].isEmpty()) return alfa[0];
-				else return (SmallAntiChain) alfa[0].join(alfa[1].times(maxSpan));
+				else return alfa[0].join(alfa[1].times(maxSpan));
 			}
 
 			@Override
@@ -588,7 +588,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 				}
 				else if (iterator[0].hasNext()) {
 					alfa[0] = iterator[0].next();
-					iterator[1] = new AntiChainInterval(alfaBottom[1],(SmallAntiChain) alfa[0].meet(alfaTop[1])).fastIterator();
+					iterator[1] = new AntiChainInterval(alfaBottom[1], alfa[0].meet(alfaTop[1])).fastIterator();
 					if (!iterator[1].hasNext()) current = null;
 					else { 
 						alfa[1] = iterator[1].next();
