@@ -230,14 +230,14 @@ public class M {
 		
 		while(it2.hasNext()) {
 			Status stat = MPI.COMM_WORLD.Recv(recvbuf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			sum.add((BigInteger) recvbuf[0]);
+			sum = sum.add(recvbuf[0]);
 			sendbuf[0] = it2.next();
 			MPI.COMM_WORLD.Send(sendbuf, 0, 1, MPI.OBJECT, stat.source, 0);
 		}
 		
 		for(int x = 1; x < nOfProc; x++) {
 			Status stat = MPI.COMM_WORLD.Recv(recvbuf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			sum.add((BigInteger) recvbuf[0]);
+			sum = sum.add(recvbuf[0]);
 			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, DIETAG);
 		}
 		
