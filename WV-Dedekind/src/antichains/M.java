@@ -25,6 +25,7 @@ import mpi.*;
 public class M {
 	
 	public static final boolean USE_MPI = false;
+	public static final int DIETAG = 7;
 	
 	public final int dedekind;
 
@@ -185,6 +186,7 @@ public class M {
 			} else {
 				worker(nOfProc);
 			}
+			MPI.Finalize();
 		}
 	}
 	
@@ -224,6 +226,8 @@ public class M {
 			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
 		}
 		
+		MPI.COMM_WORLD.Bcast(new Object[]{functions, leftIntervalSize, rightIntervalSize}, 0, 3, MPI.OBJECT, 0);
+		
 		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
 		int i;
 		for(i = 1; i < nOfProc; i++) {
@@ -241,22 +245,27 @@ public class M {
 		for(int x = 1; x < nOfProc; x++) {
 			Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
 			sum.add(buf);
-			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, 666);
+			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, DIETAG);
 		}
 		
 		System.out.println(sum);
 	}
 	
+	@SuppressWarnings("null")
 	private static void worker(int nOfProc) throws MPIException {
 		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();
 
 		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
 		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
 		
+		Object[] buf = new Object[]{functions, leftIntervalSize, rightIntervalSize};
+		MPI.COMM_WORLD.Bcast(buf, 0, 3, MPI.OBJECT, 0);
+		
+		SmallAntiChain function;
 		while(true) {
-			SmallAntiChain function = null;
+			function = null;
 			Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
-			if(stat.tag == 666) {
+			if(stat.tag == DIETAG) {
 				break;
 			}
 			BigInteger sumP = BigInteger.ZERO;
