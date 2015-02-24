@@ -1,5 +1,6 @@
 package amfsmall;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -13,8 +14,10 @@ import auxiliary.Pair;
 /**
  * More efficient representation for AntiChains.
  */
-public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<SmallAntiChain>, LatticeElement {
+public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<SmallAntiChain>, LatticeElement, Serializable {
 
+	private static final long serialVersionUID = -530910801257060853L;
+	
 	private BitSet theAntiChain = new BitSet();
 	private SmallBasicSet universe = SmallBasicSet.universe();
 	
