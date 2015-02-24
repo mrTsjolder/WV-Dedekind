@@ -193,8 +193,8 @@ public class M {
 	private static void master(int dedekind, int nOfProc) throws SyntaxErrorException, MPIException {
 		int n = dedekind - 2;
 		BigInteger sum = BigInteger.ZERO;
-		Object[] sendbuf = new Object[1];
-		Object[] recvbuf = new Object[1];
+		SmallAntiChain[] sendbuf = new SmallAntiChain[1];
+		BigInteger[] recvbuf = new BigInteger[1];
 		
 		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);				//different levels in hass-dagramm
 		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
@@ -248,7 +248,6 @@ public class M {
 	private static void worker(int nOfProc) throws MPIException {
 		Object[] buf = new Object[3];
 		MPI.COMM_WORLD.Bcast(buf, 0, 3, MPI.OBJECT, 0);
-		
 
 		SortedMap<SmallAntiChain, Long> functions = (SortedMap<SmallAntiChain, Long>) buf[0];
 
@@ -256,6 +255,7 @@ public class M {
 		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = (SortedMap<SmallAntiChain, BigInteger>) buf[2];
 		
 		SmallAntiChain[] function = new SmallAntiChain[1];
+		BigInteger[] subResult = new BigInteger[1];
 		while(true) {
 			Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
 			if(stat.tag == DIETAG) {
@@ -272,7 +272,8 @@ public class M {
 
 				}
 			}
-			MPI.COMM_WORLD.Send(sumP.multiply(rightIntervalSize.get(function[0].standard())), 0, 1, MPI.OBJECT, 0, 0);
+			subResult[0] = sumP.multiply(rightIntervalSize.get(function[0].standard()));
+			MPI.COMM_WORLD.Send(subResult, 0, 1, MPI.OBJECT, 0, 0);
 		}
 	}
 
