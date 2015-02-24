@@ -198,22 +198,12 @@ public class M {
 		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
 		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
 
-		PrintStream ps;
-		try {
-			ps = new PrintStream("EquivalenceClasses" + n);
-
-			// collect
-			for (int i=0;i<classes.length;i++) {
-				long coeff = SmallBasicSet.combinations(n, i);
-				for (BigInteger b : classes[i].keySet()) {
-					Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
-					ps.println(SmallAntiChain.decode(b) + "," + classes[i].get(b)*coeff);
-				}	
-			}
-
-			ps.close();
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
+		// collect
+		for (int i=0;i<classes.length;i++) {
+			long coeff = SmallBasicSet.combinations(n, i);
+			for (BigInteger b : classes[i].keySet()) {
+				Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
+			}	
 		}
 		
 		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
