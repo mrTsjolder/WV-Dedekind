@@ -177,7 +177,7 @@ public class M {
 		if(!USE_MPI) {
 			new M(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
 		} else {
-			MPI.Init(null);
+			MPI.Init(args);
 			int myRank = MPI.COMM_WORLD.Rank();
 			int nOfProc = MPI.COMM_WORLD.Size();
 			
@@ -193,9 +193,10 @@ public class M {
 	private static void master(int dedekind, int nOfProc) throws SyntaxErrorException, MPIException {
 		int n = dedekind - 2;
 		BigInteger sum = BigInteger.ZERO;
-		BigInteger buf = null;
+		Object[] sendbuf = new Object[1];
+		Object[] recvbuf = new Object[1];
 		
-		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
+		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);				//different levels in hass-dagramm
 		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
 
 		// collect
@@ -221,55 +222,57 @@ public class M {
 		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
 		int i;
 		for(i = 1; i < nOfProc; i++) {
-			if(it2.hasNext()) 
-				MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, i, 0);
+			if(it2.hasNext()) {
+				sendbuf[0] = it2.next();
+				MPI.COMM_WORLD.Send(sendbuf, 0, 1, MPI.OBJECT, i, 0);
+			}
 		}
 		
 		while(it2.hasNext()) {
-			
-			Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			sum.add(buf);
-			MPI.COMM_WORLD.Send(it2.next(), 0, 1, MPI.OBJECT, stat.source, 0);
+			Status stat = MPI.COMM_WORLD.Recv(recvbuf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			sum.add((BigInteger) recvbuf[0]);
+			sendbuf[0] = it2.next();
+			MPI.COMM_WORLD.Send(sendbuf, 0, 1, MPI.OBJECT, stat.source, 0);
 		}
 		
 		for(int x = 1; x < nOfProc; x++) {
-			Status stat = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			sum.add(buf);
+			Status stat = MPI.COMM_WORLD.Recv(recvbuf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			sum.add((BigInteger) recvbuf[0]);
 			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, DIETAG);
 		}
 		
 		System.out.println(sum);
 	}
 	
-	@SuppressWarnings("null")
+	@SuppressWarnings({ "unchecked" })
 	private static void worker(int nOfProc) throws MPIException {
-		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();
-
-		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		
-		Object[] buf = new Object[]{functions, leftIntervalSize, rightIntervalSize};
+		Object[] buf = new Object[3];
 		MPI.COMM_WORLD.Bcast(buf, 0, 3, MPI.OBJECT, 0);
 		
-		SmallAntiChain function;
+
+		SortedMap<SmallAntiChain, Long> functions = (SortedMap<SmallAntiChain, Long>) buf[0];
+
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = (SortedMap<SmallAntiChain, BigInteger>) buf[1];
+		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = (SortedMap<SmallAntiChain, BigInteger>) buf[2];
+		
+		SmallAntiChain[] function = new SmallAntiChain[1];
 		while(true) {
-			function = null;
 			Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
 			if(stat.tag == DIETAG) {
 				break;
 			}
 			BigInteger sumP = BigInteger.ZERO;
 			for (SmallAntiChain r1:functions.keySet()) {
-				if (r1.le(function)) {
+				if (r1.le(function[0])) {
 					sumP = sumP.add(
 							BigInteger.valueOf(functions.get(r1)).multiply(
 								leftIntervalSize.get(r1)).multiply(
-								AntiChainSolver.PatricksCoefficient(r1, function))
+								AntiChainSolver.PatricksCoefficient(r1, function[0]))
 							);
 
 				}
 			}
-			MPI.COMM_WORLD.Send(sumP.multiply(rightIntervalSize.get(function.standard())), 0, 1, MPI.OBJECT, 0, 0);
+			MPI.COMM_WORLD.Send(sumP.multiply(rightIntervalSize.get(function[0].standard())), 0, 1, MPI.OBJECT, 0, 0);
 		}
 	}
 

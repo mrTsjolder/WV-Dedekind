@@ -1,5 +1,6 @@
 package amfsmall;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.TreeSet;
 
@@ -15,7 +16,9 @@ import java.util.TreeSet;
  * @author u0003471
  *
  */
-public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSet> {
+public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSet>, Serializable {
+
+	private static final long serialVersionUID = 4240724082500295998L;
 
 	private long theSet; // set representaion
 
