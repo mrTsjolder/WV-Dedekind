@@ -187,17 +187,6 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		return res;
 	}
 	
-	//TODO: useful?
-/*	public SmallAntiChain sup() {
-		SmallAntiChain result = new SmallAntiChain(this);
-		for(int i = result.theAntiChain.length(); (i = result.theAntiChain.previousSetBit(i-1)) >= 0; ) {
-			if(Integer.bitCount(i) == 1) {
-				//for(int j = )
-			}
-		}
-		return result;
-	}*/
-	
 	/**
 	 * Check whether this SmallAntiChain is greater or equal to the one with only x as an element
 	 * 
@@ -518,7 +507,6 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	protected SmallAntiChain join(SmallAntiChain ac) {
 		SmallAntiChain result = new SmallAntiChain(this);
-		//TODO: optie? result.theAntiChain.or(((SmallAntiChain) e).theAntiChain); ...
 		result.addConditionallyAll(ac);
 		return result;
 	}
@@ -671,21 +659,39 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public int compareTo(SmallAntiChain o) {
-		//TODO: this.cardinality() - o.cardinality() possible?
-		Iterator<SmallBasicSet> s1 = this.iterator();
-		Iterator<SmallBasicSet> s2 = o.iterator();
-		while (s1.hasNext() && s2.hasNext()) {
-			int c = s1.next().compareTo(s2.next());
-			if (c != 0) return c;
-		}
-		if (s1.hasNext()) return 1;
-		else if (s2.hasNext()) return -1;
-		else return 0;
-//		if(this.size() - o.size() != 0) 
-//			return this.size() - o.size();
-//		for(int i = theAntiChain.nextSetBit(0); i >= 0; i = theAntiChain.nextSetBit(i+1))
-//			if(theAntiChain.get(i) != o.theAntiChain.get(i))
-//				return (theAntiChain.get(i)) ? 1 : -1;
+		//TODO: choose
+//		Iterator<SmallBasicSet> s1 = this.iterator();
+//		Iterator<SmallBasicSet> s2 = o.iterator();
+//		while (s1.hasNext() && s2.hasNext()) {
+//			int c = s1.next().compareTo(s2.next());
+//			if (c != 0) return c;
+//		}
+//		if (s1.hasNext()) return 1;
+//		else if (s2.hasNext()) return -1;
+//		else return 0;
+		int i = this.theAntiChain.length() - o.theAntiChain.length(), j = -1;
+		if(i != 0)
+			return i;
+		i = -1;
+		do {
+			if((i = this.theAntiChain.nextSetBit(i + 1)) != (j = o.theAntiChain.nextSetBit(j + 1))) 
+				return i - j;
+		} while(i != -1 && j != -1);
+		return 0;
+//		int test = this.theAntiChain.length() - o.theAntiChain.length(), j = -1;
+//		if(test != 0)
+//			return test;
+//		test = this.size() - o.size();
+//		if(test != 0)
+//			return test;
+//		BitSet temp = (BitSet) this.theAntiChain.clone();
+//		temp.andNot(o.theAntiChain);
+//		test = temp.nextSetBit(0);
+//		while(test > 0) {
+//			if(test - temp.nextSetBit(test + 1) != 0)
+//				return test - temp.nextSetBit(test + 1);
+//			test = temp.nextSetBit(test + 1);
+//		}
 //		return 0;
 	}
 
@@ -699,22 +705,23 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	public Iterator<SmallBasicSet> iterator() {
 		return new Iterator<SmallBasicSet>() {
 			
-			private int current = -1;
+			private int current = theAntiChain.nextSetBit(0);
 
 			@Override
 			public boolean hasNext() {
-				return theAntiChain.nextSetBit(current + 1) >= 0;
+				return current >= 0;
 			}
 
 			@Override
 			public SmallBasicSet next() {
+				int temp = current;
 				current = theAntiChain.nextSetBit(current + 1);
-				return new SmallBasicSet(current);
+				return new SmallBasicSet(temp);
 			}
 
 			@Override
 			public void remove() {
-				// throw new NotImplementedException();
+				throw new UnsupportedOperationException();
 			}
 			
 		};
@@ -739,14 +746,16 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		SmallBasicSet b = new SmallBasicSet(31);
 		SmallBasicSet c = new SmallBasicSet(7);
 		SmallAntiChain x = new SmallAntiChain();
-		x.add(a); x.add(b); x.add(c);
-		BigInteger big = x.encode();
+		x.add(a); x.add(b);
+		SmallAntiChain y = new SmallAntiChain();
+		y.add(b); y.add(c);
 		long t1 = System.nanoTime();
 		int i = 0;
 		while(i++ < 1000000) {
-			SmallAntiChain.decode(big);
+			x.compareTo(y);
 		}
 		long t2 = System.nanoTime();
-		System.out.println("timed: " + (t2 - t1) / 1000000 + "ms");
+		System.out.println("result:\t" + x.compareTo(y));
+		System.out.println("timed: \t" + (t2 - t1) / 1000000 + "ms");
 	}
 }
