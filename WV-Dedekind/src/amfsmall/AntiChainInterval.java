@@ -78,8 +78,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 	}
 
 	/**
-	 * iterator delegates to closed iterator
-
+	 * iterator delegated to closed iterator
 	 */
 	public Iterator<SmallAntiChain> iterator() {
 		// empty interval?
@@ -137,7 +136,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 
 			@Override
 			public void remove() {
-				// TODO Auto-generated method stub
+				throw new UnsupportedOperationException();
 				
 			}
 			
@@ -227,7 +226,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 
 			@Override
 			public void remove() {
-				// TODO Auto-generated method stub	
+				throw new UnsupportedOperationException();
 			}
 			
 		};
@@ -252,7 +251,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 
 				@Override
 				public void remove() {
-					// TODO Auto-generated method stub
+					throw new UnsupportedOperationException();
 					
 				}
 				
@@ -284,7 +283,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 
 				@Override
 				public void remove() {
-					// TODO Auto-generated method stub
+					throw new UnsupportedOperationException();
 					
 				}
 				
@@ -353,7 +352,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 
 			@Override
 			public void remove() {
-				// TODO Auto-generated method stub
+				throw new UnsupportedOperationException();
 				
 			}
 			
@@ -439,6 +438,7 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 	 * be decomposed
 	 */
 	public interface SubsetFinder {
+		
 		/**
 		 * Look up a subset of span that is not a subset of an element in bottom 
 		 * with size about target (indicative)
@@ -460,18 +460,22 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 	
 	private SubsetFinder finder = new SubsetFinder() {
 
-		@Override
 		/**
 		 * Look up a subset of span that is not a subset of an element in bottom 
 		 * with about half target
-		 * this problem is np-hard
+		 * this problem is NP-hard
 		 * we use an exhaustive procedure that takes exponential time in the size of O
-		 * @param span : the mother set
-		 * @param target : the approximate size wanted
-		 * @param bottom : the AntiChain in which the answer cannot be contained
-		 * @return null if span le bottom
-		 * @return the suset of span with the closest size to target not contained in bottom
+		 * 
+		 * @param 	span	
+		 * 			the mother set
+		 * @param 	target
+		 * 			the approximate size wanted
+		 * @param 	bottom
+		 * 			the AntiChain in which the answer cannot be contained
+		 * @return 	null if span le bottom
+		 * @return 	the suset of span with the closest size to target not contained in bottom
 		 */
+		@Override
 		public SmallBasicSet bestSubset(SmallBasicSet span, long target, SmallAntiChain bottom) {
 
 			SmallBasicSet best = null;
@@ -517,11 +521,11 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 	}
 
 	/**
-	 * compute an intervaliterator working by dynamic programming on the last element of the span
+	 * Compute an interval iterator working by the method illustrated in the paper of Carl Salaets.
 	 * 
-	 * @param 	interval
 	 * @pre 	interval is not empty
-	 * @return	
+	 * @return	An iterator, iterating over all antichains in this interval in a fixed order.
+	 * 			The order is defined by the encoding of the antichain.
 	 */
 	private Iterator<SmallAntiChain> fastNonEmptyIterator() {
 		final AntiChainInterval interval = this;
@@ -550,53 +554,22 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 			
 		};
 		return new Iterator<SmallAntiChain>() {
-
-			// non empty span
-			private SmallBasicSet span = interval.getTop().sp();
-			private SmallAntiChain maxSpan = SmallAntiChain.singletonAntiChain(span.maximum());
-			private SmallAntiChain current = interval.getBottom();
-			private SmallAntiChain[] alfaBottom = current.reduce(span);
-			private SmallAntiChain[] alfaTop = interval.getTop().reduce(span);
-
-			private SmallAntiChain[] alfa = new SmallAntiChain[2];
-			@SuppressWarnings("unchecked")
-			private Iterator<SmallAntiChain>[] iterator = new Iterator[2];
-			{ 
-				iterator[0] = new AntiChainInterval(alfaBottom[0],alfaTop[0]).fastIterator();
-				alfa[0] = iterator[0].next();
-				iterator[1] = new AntiChainInterval(alfaBottom[1],alfa[0].meet(alfaTop[1])).fastIterator();
-				alfa[1] = iterator[1].next();
-			};
-
-			private SmallAntiChain nextCurrent() {
-				// problem with times
-				if (alfa[1].isEmpty()) return alfa[0];
-				else return alfa[0].join(alfa[1].times(maxSpan));
-			}
+		
+			SmallAntiChain next = interval.getBottom();
 
 			@Override
 			public boolean hasNext() {
-				return current != null;
+				return next != null;
 			}
 
 			@Override
 			public SmallAntiChain next() {
-				SmallAntiChain ret = current;
-				if (iterator[1].hasNext()) {
-					alfa[1] = iterator[1].next();
-					current = nextCurrent();
-				}
-				else if (iterator[0].hasNext()) {
-					alfa[0] = iterator[0].next();
-					iterator[1] = new AntiChainInterval(alfaBottom[1], alfa[0].meet(alfaTop[1])).fastIterator();
-					if (!iterator[1].hasNext()) current = null;
-					else { 
-						alfa[1] = iterator[1].next();
-						current = nextCurrent();		
-					}
-				}
-				else current = null;
-				return ret;
+				SmallAntiChain temp = next;
+				if(!temp.equals(interval.getTop()))
+					next = next.getNext();
+				else
+					next = null;
+				return temp;
 			}
 
 			@Override
@@ -608,10 +581,10 @@ public class AntiChainInterval implements Iterable<SmallAntiChain>,Comparable<An
 	}
 	
 	/**
+	 * Compute a interval iterator if this interval is empty or
+	 * return the fastNonEmptyIterator otherwise.
 	 * 
-	 * compute an intervaliterator working by dynamic programming on the last element of the span
-	 * iterates over the closed interval independently of isClosed...()
-	 * @return an iterator that is about 4 times as fast as the normal iterator
+	 * @return 	an iterator that is about 4 times as fast as the normal iterator
 	 */
 	public Iterator<SmallAntiChain> fastIterator() {
 		if (getBottom().le(getTop())) return fastNonEmptyIterator();
