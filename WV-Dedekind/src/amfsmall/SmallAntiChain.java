@@ -380,8 +380,8 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	//TODO: complete comments
 	@Deprecated
 	public SmallAntiChain omicron(SmallAntiChain tau, SmallAntiChain alfa) {
-		if (tau.equals(SmallAntiChain.emptyAntiChain())) {
-			if (alfa.equals(SmallAntiChain.emptyAntiChain())) return this;
+		if (tau.isEmpty()) {
+			if (alfa.isEmpty()) return this;
 			else return SmallAntiChain.emptyAntiChain();
 		}
 		SmallAntiChain res = SmallAntiChain.emptyAntiChain(getUniverse());
@@ -407,6 +407,33 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		SmallAntiChain tauD = (SmallAntiChain) dual();
 		tauD.removeAll((SmallAntiChain) alfa.dual());
 		return (SmallAntiChain) tauD.dual();		
+	}
+	
+	/**
+	 * Return the antichain, with smallest encoding, greater than this.
+	 * Based on the master thesis of Carl Salaets
+	 * 
+	 * @return	a SmallAntiChain ac so that ac.gt(this)
+	 */
+	public SmallAntiChain getNext() {
+		if(this.isEmpty())
+			return SmallAntiChain.emptySetAntiChain();
+		
+		SmallAntiChain res = new SmallAntiChain(this);
+		int i = res.theAntiChain.previousSetBit(res.theAntiChain.length());
+		
+		while(i >= 0) {
+			if(i < res.theAntiChain.nextClearBit(0))
+				break;
+			res.theAntiChain.or(new SmallBasicSet(i).immediateSubSets().theAntiChain);
+			i = res.theAntiChain.previousSetBit(i - 1);
+		}
+		
+		int c = res.theAntiChain.nextClearBit(0);
+		res.theAntiChain = (BitSet) theAntiChain.clone();
+		res.theAntiChain.set(c);
+		res.theAntiChain.set(0, c, false);
+		return res;	
 	}
 	
 	/********************************************************
@@ -453,7 +480,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	public boolean removeAll(SmallAntiChain c) {
 		boolean result = false;
 		for(int i = c.theAntiChain.nextSetBit(0); i >= 0; i = c.theAntiChain.nextSetBit(i+1)) {
-			if(remove(new SmallBasicSet(i)) && !result)
+			if(remove(new SmallBasicSet(i)) && !result && !result)
 				result = true;
 		}
 		return result;
@@ -485,7 +512,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * @return	this.size() != 0
 	 */
 	public boolean isEmpty() {
-		return this.size() == 0;
+		return theAntiChain.isEmpty();
 	}
 	
 	/********************************************************
@@ -678,21 +705,6 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 				return i - j;
 		} while(i != -1 && j != -1);
 		return 0;
-//		int test = this.theAntiChain.length() - o.theAntiChain.length(), j = -1;
-//		if(test != 0)
-//			return test;
-//		test = this.size() - o.size();
-//		if(test != 0)
-//			return test;
-//		BitSet temp = (BitSet) this.theAntiChain.clone();
-//		temp.andNot(o.theAntiChain);
-//		test = temp.nextSetBit(0);
-//		while(test > 0) {
-//			if(test - temp.nextSetBit(test + 1) != 0)
-//				return test - temp.nextSetBit(test + 1);
-//			test = temp.nextSetBit(test + 1);
-//		}
-//		return 0;
 	}
 
 	/**
@@ -742,20 +754,14 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	//TODO: delete
 	public static void main(String[] args) {
-		SmallBasicSet a = new SmallBasicSet(12);
-		SmallBasicSet b = new SmallBasicSet(31);
-		SmallBasicSet c = new SmallBasicSet(7);
+		SmallBasicSet a = new SmallBasicSet(7);
 		SmallAntiChain x = new SmallAntiChain();
-		x.add(a); x.add(b);
-		SmallAntiChain y = new SmallAntiChain();
-		y.add(b); y.add(c);
+		x.add(a);
 		long t1 = System.nanoTime();
-		int i = 0;
-		while(i++ < 1000000) {
-			x.compareTo(y);
+		for(int i = 0; i < 100000; i++) {
+			x.getNext();
 		}
 		long t2 = System.nanoTime();
-		System.out.println("result:\t" + x.compareTo(y));
-		System.out.println("timed: \t" + (t2 - t1) / 1000000 + "ms");
+		System.out.println("time: " + (t2 - t1) / 1000000 + "ms");
 	}
 }
