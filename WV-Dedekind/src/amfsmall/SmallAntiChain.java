@@ -702,22 +702,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public int compareTo(SmallAntiChain o) {
-		//TODO: choose (first one is faster in M, second one is faster in comparing)!!!
-//		Iterator<SmallBasicSet> s1 = this.iterator();
-//		Iterator<SmallBasicSet> s2 = o.iterator();
-//		while (s1.hasNext() && s2.hasNext()) {
-//			int c = s1.next().compareTo(s2.next());
-//			if (c != 0) return c;
-//		}
-//		if (s1.hasNext()) return 1;
-//		else if (s2.hasNext()) return -1;
-//		else return 0;
+		//TODO: belang orde!!!
 		int i = 1 + this.theAntiChain.length(), j = 1 + o.theAntiChain.length();
 		if(i - j != 0)
-			return i - j;
+			return j - i;
 		
-		while(i > 0 && j > 0) {
-			if((i = this.theAntiChain.previousSetBit(i - 1)) != (j = o.theAntiChain.previousSetBit(j - 1))) 
+		while((i = this.theAntiChain.previousSetBit(i - 1)) > 0 && (j = o.theAntiChain.previousSetBit(j - 1)) > 0) {
+			if(i != j) 
 				return i - j;
 		}
 		
@@ -777,7 +768,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		y.setUniverse(new SmallBasicSet(7));
 		long t1 = System.nanoTime();
 		for(int i = 0; i < 100000; i++) {
-			x.le(y);
+			x.compareTo(y);
 		}
 		long t2 = System.nanoTime();
 		System.out.println("time: " + (t2 - t1) / 1000000 + "ms");
