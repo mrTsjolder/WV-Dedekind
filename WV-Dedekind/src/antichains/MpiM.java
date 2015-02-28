@@ -119,7 +119,9 @@ public class MpiM {
 		}
 		
 		for(int x = 1; x < nOfProc; x++) {
-			Status stat = MPI.COMM_WORLD.Recv(recvbuf1, 0, 3, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			//TODO: duplicated code
+			Status stat = MPI.COMM_WORLD.Recv(recvbuf1, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
+			MPI.COMM_WORLD.Recv(recvbuf2, 0, 2, MPI.LONG, stat.source, 0);
 			sum = sum.add(recvbuf1[0]);
 			newEvaluations += recvbuf2[0];
 			time += recvbuf2[1];

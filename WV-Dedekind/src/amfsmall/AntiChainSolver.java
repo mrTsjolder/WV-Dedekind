@@ -103,7 +103,7 @@ public class AntiChainSolver {
 	private static SortedMap<BigInteger,Long> algorithm7(long n, SortedMap<BigInteger, Long> S) {
 		SortedMap<BigInteger,Long> S1 = new TreeMap<BigInteger, Long>();
 		SmallAntiChain alfa = SmallAntiChain.universeAntiChain((int) n);
-		SmallAntiChain u = SmallAntiChain.universeAntiChain((int) (n+1));
+		SmallAntiChain u = SmallAntiChain.universeAntiChain((int) n+1);
 		SmallAntiChain l = SmallAntiChain.singletonAntiChain((int) (n+1));
 		for (BigInteger tCode : S.keySet()) {
 			SmallAntiChain t = SmallAntiChain.decode(tCode);

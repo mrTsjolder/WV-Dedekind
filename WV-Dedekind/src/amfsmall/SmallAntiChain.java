@@ -416,12 +416,32 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * @return	a SmallAntiChain ac so that ac.gt(this)
 	 */
 	public SmallAntiChain getNext() {
+		//TODO: iterating from top to bottom more efficient?
 		if(this.isEmpty())
 			return SmallAntiChain.emptySetAntiChain();
 		
-		SmallAntiChain res = new SmallAntiChain(this);
-		int i = res.theAntiChain.previousSetBit(res.theAntiChain.length());
+		SmallAntiChain res = getMonotonic();
+		int c = res.theAntiChain.nextClearBit(0);
 		
+		res.theAntiChain = (BitSet) theAntiChain.clone();
+		res.theAntiChain.set(c);
+		res.theAntiChain.set(0, c, false);
+		
+		return res;	
+	}
+	
+	/**
+	 * Return the monotonic function related to this antichain.
+	 * 
+	 * @return	a SmallAntiChain which is actually a monotonic function.
+	 */
+	private SmallAntiChain getMonotonic() {
+		if(this.isEmpty())
+			return SmallAntiChain.emptyAntiChain();
+		
+		SmallAntiChain res = new SmallAntiChain(this);
+
+		int i = theAntiChain.previousSetBit(theAntiChain.length());
 		while(i >= 0) {
 			if(i < res.theAntiChain.nextClearBit(0))
 				break;
@@ -429,11 +449,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 			i = res.theAntiChain.previousSetBit(i - 1);
 		}
 		
-		int c = res.theAntiChain.nextClearBit(0);
-		res.theAntiChain = (BitSet) theAntiChain.clone();
-		res.theAntiChain.set(c);
-		res.theAntiChain.set(0, c, false);
-		return res;	
+		return res;
 	}
 	
 	/********************************************************
@@ -686,7 +702,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public int compareTo(SmallAntiChain o) {
-		//TODO: choose
+		//TODO: choose (first one is faster in M, second one is faster in comparing)!!!
 //		Iterator<SmallBasicSet> s1 = this.iterator();
 //		Iterator<SmallBasicSet> s2 = o.iterator();
 //		while (s1.hasNext() && s2.hasNext()) {
@@ -696,14 +712,15 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 //		if (s1.hasNext()) return 1;
 //		else if (s2.hasNext()) return -1;
 //		else return 0;
-		int i = this.theAntiChain.length() - o.theAntiChain.length(), j = -1;
-		if(i != 0)
-			return i;
-		i = -1;
-		do {
-			if((i = this.theAntiChain.nextSetBit(i + 1)) != (j = o.theAntiChain.nextSetBit(j + 1))) 
+		int i = 1 + this.theAntiChain.length(), j = 1 + o.theAntiChain.length();
+		if(i - j != 0)
+			return i - j;
+		
+		while(i > 0 && j > 0) {
+			if((i = this.theAntiChain.previousSetBit(i - 1)) != (j = o.theAntiChain.previousSetBit(j - 1))) 
 				return i - j;
-		} while(i != -1 && j != -1);
+		}
+		
 		return 0;
 	}
 
@@ -754,12 +771,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	//TODO: delete
 	public static void main(String[] args) {
-		SmallBasicSet a = new SmallBasicSet(7);
-		SmallAntiChain x = new SmallAntiChain();
-		x.add(a);
+		SmallAntiChain x = new SmallAntiChain(new long[]{96});
+		x.setUniverse(new SmallBasicSet(7));
+		SmallAntiChain y = new SmallAntiChain(new long[]{24});
+		y.setUniverse(new SmallBasicSet(7));
 		long t1 = System.nanoTime();
 		for(int i = 0; i < 100000; i++) {
-			x.getNext();
+			x.le(y);
 		}
 		long t2 = System.nanoTime();
 		System.out.println("time: " + (t2 - t1) / 1000000 + "ms");
