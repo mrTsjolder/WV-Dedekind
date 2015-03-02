@@ -1,3 +1,4 @@
+# Generated automatically from Makefile.in by configure.
 # File         : Makefile
 # Author       : Sung-Hoon Ko, Xinying Li
 # Created      : Thu Apr 1998
@@ -8,29 +9,29 @@
 SHELL       = /bin/sh
 
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
+srcdir = .
+top_srcdir = ../..
 
 VPATH = .:${srcdir}
 
 
-CC = @MPIPATH@/bin/@CC@
+CC = /mirror/mpich2/bin/mpicc
 
-JDK = @JAVA@
+JDK = /usr/lib/jvm/java-7-oracle
 
-MPI_INC = @MPI_INC@
-MPI_LIB = @MPI_LIB@
+MPI_INC = -I/mirror/mpich2/include
+MPI_LIB = -L/mirror/mpich2/lib
 
-CCLIBKEY = @CCLIBKEY@
+CCLIBKEY = 
 
-DEFPINS = @DEFPINS@
-DEFUNPACK = @DEFUNPACK@
-DEFJVMSIGNAL1 = @DEFJVMSIGNAL1@
+DEFPINS = 
+DEFUNPACK = -DUNPACK_ALLOWS_SHORT_BUFFER
+DEFJVMSIGNAL1 = 
 
-INCLUDES = -I$(JDK)/include -I$(JDK)/include/@JOS@ $(MPI_INC)
+INCLUDES = -I$(JDK)/include -I$(JDK)/include/linux $(MPI_INC)
 
-CLASSES = @top_srcdir@/lib/classes
-LIB = @top_srcdir@/lib
+CLASSES = ../../lib/classes
+LIB = ../../lib
 
 TITLE = mpi
 PFX = $(TITLE)_
@@ -46,9 +47,9 @@ JH = $(JDK)/bin/javah
 JFLAG = -jni
 CFLAGS = -c $(DEFPINS) $(DEFUNPACK)
 
-LD = @LD@
-LDFLAG = @LDFLAG@
-LDFLAGSIG = @LDFLAGSIG@
+LD = /mirror/mpich2/bin/mpicc
+LDFLAG = -shared
+LDFLAGSIG = -shared
 
 OBJ = $(PFX)MPI.o       $(PFX)Comm.o      \
       $(PFX)Op.o        $(PFX)Datatype.o  \
