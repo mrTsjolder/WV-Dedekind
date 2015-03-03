@@ -80,7 +80,7 @@ public class MpiM {
 		timePair = doTime("Generated interval sizes",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
-		MPI.COMM_WORLD.Bcast(new Object[]{functions, leftIntervalSize, u}, 0, 3, MPI.OBJECT, 0);
+		MPI.COMM_WORLD.bcast(new Object[]{functions, leftIntervalSize, u}, 3, MPI.PACKED, 0);
 
 		// test
 		int reportRate = 10;
@@ -93,7 +93,7 @@ public class MpiM {
 		for(i = 1; i < nOfProc; i++) {
 			if(it2.hasNext()) {
 				sendbuf[0] = it2.next();
-				MPI.COMM_WORLD.Send(sendbuf, 0, 1, MPI.OBJECT, i, 0);
+				MPI.COMM_WORLD.send(sendbuf, 1, MPI.PACKED, i, 0);
 			}
 		}
 		
@@ -101,8 +101,8 @@ public class MpiM {
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
 		while(it2.hasNext()) {
-			Status stat = MPI.COMM_WORLD.Recv(recvbuf1, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			MPI.COMM_WORLD.Recv(recvbuf2, 0, 2, MPI.LONG, stat.source, 0);
+			Status stat = MPI.COMM_WORLD.recv(recvbuf1, 1, MPI.PACKED, MPI.ANY_SOURCE, 0);
+			MPI.COMM_WORLD.recv(recvbuf2, 2, MPI.LONG, stat.getSource(), 0);
 			sum = sum.add(recvbuf1[0]);
 			newEvaluations += recvbuf2[0];
 			time += recvbuf2[1];
@@ -115,13 +115,13 @@ public class MpiM {
 				System.out.println("Total thread time " + time);
 			}
 			sendbuf[0] = it2.next();
-			MPI.COMM_WORLD.Send(sendbuf, 0, 1, MPI.OBJECT, stat.source, 0);
+			MPI.COMM_WORLD.send(sendbuf, 1, MPI.PACKED, stat.getSource(), 0);
 		}
 		
 		for(int x = 1; x < nOfProc; x++) {
 			//TODO: duplicated code
-			Status stat = MPI.COMM_WORLD.Recv(recvbuf1, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, 0);
-			MPI.COMM_WORLD.Recv(recvbuf2, 0, 2, MPI.LONG, stat.source, 0);
+			Status stat = MPI.COMM_WORLD.recv(recvbuf1, 1, MPI.PACKED, MPI.ANY_SOURCE, 0);
+			MPI.COMM_WORLD.recv(recvbuf2, 2, MPI.LONG, stat.getSource(), 0);
 			sum = sum.add(recvbuf1[0]);
 			newEvaluations += recvbuf2[0];
 			time += recvbuf2[1];
@@ -133,7 +133,7 @@ public class MpiM {
 				timeCPU = doCPUTime("CPU ",timeCPU);
 				System.out.println("Total thread time " + time);
 			}
-			MPI.COMM_WORLD.Send(null, 0, 0, MPI.OBJECT, stat.source, DIETAG);
+			MPI.COMM_WORLD.send(null, 0, MPI.PACKED, stat.getSource(), DIETAG);
 		}
 		
 
@@ -153,7 +153,7 @@ public class MpiM {
 	@SuppressWarnings("unchecked")
 	private void work() throws MPIException {
 		Object[] buf = new Object[3];
-		MPI.COMM_WORLD.Bcast(buf, 0, 3, MPI.OBJECT, 0);
+		MPI.COMM_WORLD.bcast(buf, 3, MPI.PACKED, 0);
 
 		SortedMap<SmallAntiChain, Long> functions = (SortedMap<SmallAntiChain, Long>) buf[0];
 
@@ -164,8 +164,8 @@ public class MpiM {
 		BigInteger[] subResult = new BigInteger[1];
 		long[] testMaterial = new long[2];
 		while(true) {
-			Status stat = MPI.COMM_WORLD.Recv(function, 0, 1, MPI.OBJECT, 0, MPI.ANY_TAG);
-			if(stat.tag == DIETAG) {
+			Status stat = MPI.COMM_WORLD.recv(function, 1, MPI.PACKED, 0, MPI.ANY_TAG);
+			if(stat.getTag() == DIETAG) {
 				break;
 			}
 			
@@ -183,10 +183,10 @@ public class MpiM {
 				}
 			}
 			subResult[0] = sumP.multiply(BigInteger.valueOf(new AntiChainInterval(function[0], u).latticeSize()));
-			MPI.COMM_WORLD.Send(subResult, 0, 1, MPI.OBJECT, 0, 0);
+			MPI.COMM_WORLD.send(subResult, 1, MPI.PACKED, 0, 0);
 			testMaterial[0] = evaluations;
 			testMaterial[1] = getCpuTime() - time;
-			MPI.COMM_WORLD.Send(testMaterial, 0, 2, MPI.LONG, 0, 0);
+			MPI.COMM_WORLD.send(testMaterial, 2, MPI.LONG, 0, 0);
 		}
 	}
 	
@@ -231,8 +231,8 @@ public class MpiM {
 	public static void main(String[] args) throws MPIException, SyntaxErrorException {
 		MPI.Init(args);
 
-		int myRank = MPI.COMM_WORLD.Rank();
-		int nOfProc = MPI.COMM_WORLD.Size();
+		int myRank = MPI.COMM_WORLD.getRank();
+		int nOfProc = MPI.COMM_WORLD.getSize();
 		
 		MpiM node = new MpiM(Integer.parseInt(args[0]), nOfProc);
 		

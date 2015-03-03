@@ -15,7 +15,6 @@ import amfsmall.AntiChainSolver;
 import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
-import mpi.*;
 
 /**
  * class for the computation of a Dedekind number
@@ -170,7 +169,7 @@ public class M {
 	}
 
 
-	public static void main(String[] args) throws NumberFormatException, SyntaxErrorException, InterruptedException, MPIException {
+	public static void main(String[] args) throws NumberFormatException, SyntaxErrorException, InterruptedException {
 		new M(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
 	}
 
