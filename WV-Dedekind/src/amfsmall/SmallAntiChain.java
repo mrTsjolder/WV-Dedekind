@@ -30,7 +30,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	public SmallAntiChain(Collection<SmallBasicSet> C) {
 		for(SmallBasicSet s : C) 
-			theAntiChain.set(s.toIntRepresentation());
+			theAntiChain.set((int) s.toLong());
 	}
 	
 	/**
@@ -45,7 +45,12 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * Create an antichain based on a long.
 	 */
 	public SmallAntiChain(long[] l) {
-		theAntiChain = BitSet.valueOf(l);
+		if(l.length == 1) {
+			new SmallAntiChain(emptyAntiChain(new SmallBasicSet(l[0])));
+		} else {
+			theAntiChain = BitSet.valueOf(Arrays.copyOf(l, l.length - 1));
+			universe = new SmallBasicSet(l[l.length - 1]);
+		}	
 	}
 	
 	/**
@@ -88,7 +93,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	public static SmallAntiChain oneSetAntiChain(SmallBasicSet x) {
 		SmallAntiChain result = new SmallAntiChain();
-		result.theAntiChain.set(x.toIntRepresentation());
+		result.theAntiChain.set((int) x.toLong());
 		return result;
 	}
 	
@@ -143,7 +148,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 			if(a.hasAsSubset(x)) return;
 			if(x.hasAsSubset(a)) theAntiChain.set(i, false);
 		}
-		theAntiChain.set(x.toIntRepresentation());
+		theAntiChain.set((int) x.toLong());
 	}
 
 	/**
@@ -452,6 +457,17 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		return res;
 	}
 	
+	public long[] toLongArray() {
+		if(this.isEmpty()) {
+			return new long[]{universe.toLong()};
+		} else {
+			long[] temp = theAntiChain.toLongArray();
+			long[] result = Arrays.copyOf(temp, temp.length + 1);
+			result[temp.length] = universe.toLong();
+			return result;
+		}
+	}
+	
 	/********************************************************
 	 * Useful Set<SmallBasicSet> methods					*
 	 ********************************************************/
@@ -465,7 +481,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	public boolean add(SmallBasicSet s) {
 		if(universe.hasAsSubset(s)) {
-			theAntiChain.set(s.toIntRepresentation());
+			theAntiChain.set((int) s.toLong());
 			return true;
 		}
 		return false;
@@ -479,7 +495,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * @return 	true if set was succesfully deleted, false when this antichain didn't change
 	 */
 	public boolean remove(SmallBasicSet s) {
-		int temp = s.toIntRepresentation();
+		int temp = (int) s.toLong();
 		if(!theAntiChain.get(temp))
 			return false;
 		theAntiChain.set(temp, false);
@@ -510,7 +526,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * @return	theAntiChain.get(a.toIntRepresentation())
 	 */
 	public boolean contains(SmallBasicSet a) {
-		return theAntiChain.get(a.toIntRepresentation());
+		return theAntiChain.get((int) a.toLong());
 	}
 
 	/**
@@ -766,11 +782,18 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		x.setUniverse(new SmallBasicSet(7));
 		SmallAntiChain y = new SmallAntiChain(new long[]{24});
 		y.setUniverse(new SmallBasicSet(7));
-		long t1 = System.nanoTime();
-		for(int i = 0; i < 100000; i++) {
-			x.compareTo(y);
+		
+		System.out.println(emptyAntiChain);
+		for(long l : emptyAntiChain.toLongArray()) {
+			System.out.println(l);
 		}
-		long t2 = System.nanoTime();
-		System.out.println("time: " + (t2 - t1) / 1000000 + "ms");
+		System.out.println(new SmallAntiChain(emptyAntiChain.toLongArray()));
+		
+//		long t1 = System.nanoTime();
+//		for(int i = 0; i < 100000; i++) {
+//			x.compareTo(y);
+//		}
+//		long t2 = System.nanoTime();
+//		System.out.println("time: " + (t2 - t1) / 1000000 + "ms");
 	}
 }

@@ -368,8 +368,8 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 	}
 	
 	//TODO: comments
-	public int toIntRepresentation() {
-		return (int) theSet;
+	public long toLong() {
+		return theSet;
 	}
 
 }
