@@ -718,17 +718,26 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 */
 	@Override
 	public int compareTo(SmallAntiChain o) {
+		Iterator<SmallBasicSet> s1 = this.iterator();
+		Iterator<SmallBasicSet> s2 = o.iterator();
+		while (s1.hasNext() && s2.hasNext()) {
+			int c = s1.next().compareTo(s2.next());
+			if (c != 0) return c;
+		}
+		if (s1.hasNext()) return 1;
+		else if (s2.hasNext()) return -1;
+		else return 0;
 		//TODO: belang orde!!!
-		int i = 1 + this.theAntiChain.length(), j = 1 + o.theAntiChain.length();
+		/*int i = 1 + this.theAntiChain.length(), j = 1 + o.theAntiChain.length();
 		if(i - j != 0)
-			return j - i;
+			return i - j;
 		
 		while((i = this.theAntiChain.previousSetBit(i - 1)) > 0 && (j = o.theAntiChain.previousSetBit(j - 1)) > 0) {
 			if(i != j) 
 				return i - j;
 		}
 		
-		return 0;
+		return 0;*/
 	}
 
 	/**
@@ -778,16 +787,19 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	//TODO: delete
 	public static void main(String[] args) {
-		SmallAntiChain x = new SmallAntiChain(new long[]{96});
-		x.setUniverse(new SmallBasicSet(7));
-		SmallAntiChain y = new SmallAntiChain(new long[]{24});
-		y.setUniverse(new SmallBasicSet(7));
+		SmallAntiChain x = SmallAntiChain.emptyAntiChain();
+		x.setUniverse(new SmallBasicSet(15));
+		SmallAntiChain y = SmallAntiChain.oneSetAntiChain(new SmallBasicSet(15));
+		y.setUniverse(new SmallBasicSet(15));
+		System.out.println(x);
+		while(x.lt(y))
+			System.out.println(x = x.getNext());
 		
-		System.out.println(emptyAntiChain);
-		for(long l : emptyAntiChain.toLongArray()) {
-			System.out.println(l);
-		}
-		System.out.println(new SmallAntiChain(emptyAntiChain.toLongArray()));
+//		System.out.println(emptyAntiChain);
+//		for(long l : emptyAntiChain.toLongArray()) {
+//			System.out.println(l);
+//		}
+//		System.out.println(new SmallAntiChain(emptyAntiChain.toLongArray()));
 		
 //		long t1 = System.nanoTime();
 //		for(int i = 0; i < 100000; i++) {
