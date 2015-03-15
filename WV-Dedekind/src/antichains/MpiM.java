@@ -36,10 +36,10 @@ public class MpiM {
 	private int nOfProc;
 
 	//buffers
-	int[] num = new int[1];
+	private int[] num = new int[1];
 	private byte[] bcastbuf;
-	long[] acbuf;
-	private byte[] bigintbuf = new byte[1];
+	private long[] acbuf;
+	private byte[] bigintbuf;
 	private long[] timebuf = new long[2];
 	
 	/**
@@ -103,6 +103,9 @@ public class MpiM {
 		
 		MPI.COMM_WORLD.bcast(new int[]{bcastbuf.length}, 1, MPI.INT, 0);
 		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
+		
+		timePair = doTime("Broadcast succesfully finished", timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
 
 		// test
 		int reportRate = 10;
@@ -120,7 +123,7 @@ public class MpiM {
 			}
 		}
 		
-		timePair = doTime("First " + nOfProc + " messages sent", timePair);
+		timePair = doTime("First " + (nOfProc - 1) + " messages sent", timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
 		while(it2.hasNext()) {
@@ -229,9 +232,9 @@ public class MpiM {
 	 * 			If MPI failed.
 	 */
 	private int retrieveResults() throws MPIException {
-		MPI.COMM_WORLD.recv(num, 1, MPI.INT, MPI.ANY_SOURCE, NUMTAG);
+		Status stat = MPI.COMM_WORLD.recv(num, 1, MPI.INT, MPI.ANY_SOURCE, NUMTAG);
 		bigintbuf = new byte[num[0]];
-		Status stat = MPI.COMM_WORLD.recv(bigintbuf, bigintbuf.length, MPI.BYTE, MPI.ANY_SOURCE, 0);
+		MPI.COMM_WORLD.recv(bigintbuf, bigintbuf.length, MPI.BYTE, stat.getSource(), 0);
 		MPI.COMM_WORLD.recv(timebuf, 2, MPI.LONG, stat.getSource(), 0);
 		return stat.getSource();
 	}
