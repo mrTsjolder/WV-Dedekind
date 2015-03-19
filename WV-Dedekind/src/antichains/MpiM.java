@@ -38,7 +38,7 @@ public class MpiM {
 	//buffers
 	private int[] num = new int[1];
 	private byte[] bcastbuf;
-	private long[] acbuf;
+	private long[] acbuf = new long[2];
 	private byte[] bigintbuf;
 	private long[] timebuf = new long[2];
 	
@@ -99,7 +99,7 @@ public class MpiM {
 		timePair = doTime("Generated interval sizes",timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 
-		bcastbuf = serialize(new Object[]{functions, leftIntervalSize, u});
+		bcastbuf = serialize(new Object[]{functions, leftIntervalSize});
 		
 		MPI.COMM_WORLD.bcast(new int[]{bcastbuf.length}, 1, MPI.INT, 0);
 		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
@@ -139,37 +139,28 @@ public class MpiM {
 				timeCPU = doCPUTime("CPU ",timeCPU);
 				System.out.println("Total thread time " + time);
 			}
-			//TODO: get in retrieve...
 			acbuf = it2.next().toLongArray();
 			MPI.COMM_WORLD.send(new int[]{acbuf.length}, 1, MPI.INT, src, NUMTAG);
 			MPI.COMM_WORLD.send(acbuf, acbuf.length, MPI.LONG, src, 0);
 		}
 		
+		System.gc();
+		evaluations += newEvaluations;
+		
+		timePair = doTime(String.format("%d evs\n%s val",evaluations, sum),timePair);
+		timeCPU = doCPUTime("Finishing ",timeCPU);
+		
 		for(int x = 1; x < nOfProc; x++) {
-			//TODO: duplicated code
 			int src = retrieveResults();
 			sum = sum.add(new BigInteger(bigintbuf));
-			newEvaluations += timebuf[0];
-			time += timebuf[1];
-			if (newEvaluations > reportRate) {
-				evaluations += newEvaluations;
-				newEvaluations = 0;
-				reportRate *= 4;
-				timePair = doTime(String.format("%d evs\n%s val",evaluations, sum),timePair);
-				timeCPU = doCPUTime("CPU ",timeCPU);
-				System.out.println("Total thread time " + time);
-			}
 			MPI.COMM_WORLD.send(null, 0, MPI.INT, src, NUMTAG);
 			MPI.COMM_WORLD.send(null, 0, MPI.LONG, src, DIETAG);
 		}
 		
 
-		evaluations += newEvaluations;
-		
-		timePair = doTime(String.format("%d evs\n%s val",evaluations, sum),timePair);
-		timeCPU = doCPUTime("Finishing ",timeCPU);
-		System.out.println(sum);
-		timePair = doTime("Finished",timePair);
+
+		System.out.println("\n" + sum);
+		timeCPU = doCPUTime("Finished ",timeCPU);
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		System.out.println(String.format("%30s %15d ns","Total thread time ",time));
 
@@ -179,6 +170,7 @@ public class MpiM {
 
 	@SuppressWarnings("unchecked")
 	private void work() throws MPIException {
+		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
 		SmallAntiChain function;
 		
 		MPI.COMM_WORLD.bcast(num, 1, MPI.INT, 0);
@@ -189,16 +181,15 @@ public class MpiM {
 
 		SortedMap<SmallAntiChain, Long> functions = (SortedMap<SmallAntiChain, Long>) obj[0];
 		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = (SortedMap<SmallAntiChain, BigInteger>) obj[1];
-		SmallAntiChain u = (SmallAntiChain) obj[2];
 		
 		while(true) {
 			MPI.COMM_WORLD.recv(num, 1, MPI.INT, 0, NUMTAG);
-			acbuf = new long[num[0]];
+			if(num[0] != acbuf.length)
+				acbuf = new long[num[0]];
 			Status stat = MPI.COMM_WORLD.recv(acbuf, acbuf.length, MPI.LONG, 0, MPI.ANY_TAG);
 			
-			if(stat.getTag() == DIETAG) {
+			if(stat.getTag() == DIETAG)
 				break;
-			}
 			
 			function = new SmallAntiChain(acbuf);
 			
@@ -227,13 +218,14 @@ public class MpiM {
 	/**
 	 * Retrieve results sent by the workers.
 	 * 
-	 * @return	An integer representing the rank of the node that sent the results.
+	 * @return	an integer representing the rank of the node that sent the results.
 	 * @throws 	MPIException
-	 * 			If MPI failed.
+	 * 			if MPI failed.
 	 */
 	private int retrieveResults() throws MPIException {
 		Status stat = MPI.COMM_WORLD.recv(num, 1, MPI.INT, MPI.ANY_SOURCE, NUMTAG);
-		bigintbuf = new byte[num[0]];
+		if(num[0] != bigintbuf.length)
+			bigintbuf = new byte[num[0]];
 		MPI.COMM_WORLD.recv(bigintbuf, bigintbuf.length, MPI.BYTE, stat.getSource(), 0);
 		MPI.COMM_WORLD.recv(timebuf, 2, MPI.LONG, stat.getSource(), 0);
 		return stat.getSource();
@@ -248,7 +240,7 @@ public class MpiM {
 	 * 
 	 * @param 	object
 	 * 			The object to be serialized.
-	 * @return	A byte array representing the serialized object.
+	 * @return	a byte array representing the serialized object.
 	 * 			This array contains no elements if something went wrong.
 	 */
 	private byte[] serialize(Object object) {
@@ -272,7 +264,7 @@ public class MpiM {
 	 * 
 	 * @param	bytes
 	 * 			The byte array to be deserialized.
-	 * @return	The object that was represented by this byte array.
+	 * @return	the object that was represented by this byte array.
 	 * 			The object will be null if something went wrong.
 	 */
 	private Object deserialize(byte[] bytes) {
@@ -292,7 +284,7 @@ public class MpiM {
 	 * Timing-utils												*
 	 ************************************************************/
 	
-	private class TestTime {
+	private final class TestTime {
 		public final long previousTime;
 		public final long currentTime;
 		public final long startTime;
@@ -305,14 +297,14 @@ public class MpiM {
 	}
 
 	private TestTime doTime(String msg, TestTime timePair) {
-		System.out.println(String.format("%s %d ms %d ms (%d ms)",msg,(timePair.previousTime - timePair.startTime),  
-				 (timePair.currentTime - timePair.startTime),(-timePair.previousTime + timePair.currentTime)));
+		System.out.println(String.format("%s %d ms %d ms (%d ms)", msg, (timePair.previousTime - timePair.startTime),  
+				 (timePair.currentTime - timePair.startTime), (timePair.currentTime - timePair.previousTime)));
 		return new TestTime(timePair.currentTime, System.currentTimeMillis(), timePair.startTime);
 	}
 
 	private TestTime doCPUTime(String msg, TestTime timePair) {
-		System.out.println(String.format("%s : %d ns (+ %d ns)",msg,  
-				 (timePair.currentTime - timePair.startTime),(-timePair.previousTime + timePair.currentTime)));
+		System.out.println(String.format("%s : %d ns (+ %d ns)", msg,  
+				 (timePair.currentTime - timePair.startTime), (timePair.currentTime - timePair.previousTime)));
 		return new TestTime(timePair.currentTime, getCpuTime(), timePair.startTime);
 	}
 	
@@ -326,7 +318,7 @@ public class MpiM {
 	 * Main														*
 	 ************************************************************/
 	
-	public static void main(String[] args) throws MPIException, SyntaxErrorException {
+	public static void main(String[] args) throws MPIException, SyntaxErrorException, InterruptedException {
 		MPI.Init(args);
 
 		int myRank = MPI.COMM_WORLD.getRank();
