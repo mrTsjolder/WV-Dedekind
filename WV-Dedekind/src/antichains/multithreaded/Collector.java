@@ -1,4 +1,4 @@
-package antichains;
+package antichains.multithreaded;
 // deprecated, use acmat/Collector<BigInteger,BigInteger>
 import java.math.BigInteger;
 

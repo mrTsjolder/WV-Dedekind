@@ -12,7 +12,7 @@ import java.util.Set;
 import auxiliary.Pair;
 
 /**
- * More efficient representation for AntiChains.
+ * More efficient representation for AntiChains (not really smaller, due to non-sparse BitSet).
  */
 public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<SmallAntiChain>, LatticeElement, Serializable {
 
@@ -45,8 +45,9 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	 * Create an antichain based on a long.
 	 */
 	public SmallAntiChain(long[] l) {
+//		theAntiChain = BitSet.valueOf(l);
 		if(l.length == 1) {
-			new SmallAntiChain(emptyAntiChain(new SmallBasicSet(l[0])));
+			emptyAntiChain(new SmallBasicSet(l[0]));
 		} else {
 			theAntiChain = BitSet.valueOf(Arrays.copyOf(l, l.length - 1));
 			universe = new SmallBasicSet(l[l.length - 1]);
@@ -458,6 +459,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	}
 	
 	public long[] toLongArray() {
+//		return theAntiChain.toLongArray();
 		if(this.isEmpty()) {
 			return new long[]{universe.toLong()};
 		} else {
@@ -787,13 +789,13 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	
 	//TODO: delete
 	public static void main(String[] args) {
-		SmallAntiChain x = SmallAntiChain.emptyAntiChain();
-		x.setUniverse(new SmallBasicSet(15));
-		SmallAntiChain y = SmallAntiChain.oneSetAntiChain(new SmallBasicSet(15));
-		y.setUniverse(new SmallBasicSet(15));
-		System.out.println(x);
-		while(x.lt(y))
-			System.out.println(x = x.getNext());
+		SmallAntiChain alfa = SmallAntiChain.universeAntiChain(3);
+		SmallAntiChain u = SmallAntiChain.universeAntiChain(4);
+		SmallAntiChain x = new SmallAntiChain(new long[]{96 + (1<<9)});
+		
+		System.out.println(alfa); System.out.println(u); System.out.println(x);
+		System.out.println(u.omicron(x, alfa));
+		System.out.println(x.omicron(alfa));
 		
 //		System.out.println(emptyAntiChain);
 //		for(long l : emptyAntiChain.toLongArray()) {

@@ -7,9 +7,9 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="/Users/PieterJan/Downloads/openmpi-1.7.5/ompi/mpi/java/java/mpi.jar">
+	<classpathentry kind="lib" path="/Users/PieterJan/Downloads/openmpi-1.8.3/ompi/mpi/java/java/mpi.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="file:/Users/PieterJan/Downloads/openmpi-1.7.5/ompi/mpi/java/java/doc/"/>
+			<attribute name="javadoc_location" value="file:/Users/PieterJan/Downloads/openmpi-1.8.3/ompi/mpi/java/java/doc/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

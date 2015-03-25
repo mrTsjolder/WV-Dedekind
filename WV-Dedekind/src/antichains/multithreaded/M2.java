@@ -1,27 +1,19 @@
-package antichains;
+package antichains.multithreaded;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import amfsmall.AntiChainInterval;
 import amfsmall.SmallAntiChain;
-import amfsmall.AntiChainSolver;
+import amfsmall.AntiChainInterval;
 import amfsmall.SmallBasicSet;
-import amfsmall.Storage;
 import amfsmall.SyntaxErrorException;
 
-/**
- * class for the computation of a Dedekind number
- * @author u0003471
- *
- */
-public class M {
+public class M2 {
 	
 	public final int dedekind;
 
@@ -31,7 +23,7 @@ public class M {
 	static private SmallAntiChain[] fN;
 	static private AntiChainInterval[] iS;
 	
-	public M(int n, int coresUsed) throws SyntaxErrorException {
+	public M2(int n, int coresUsed) throws SyntaxErrorException {
 		dedekind = n;
 		
 		N = new SmallBasicSet[n];
@@ -49,18 +41,6 @@ public class M {
 		cores = coresUsed;
 	}
 	
-	private class TestTime {
-		public final long previousTime;
-		public final long currentTime;
-		public final long startTime;
-		
-		public TestTime(long previous, long current, long start) {
-			previousTime = previous;
-			currentTime = current;
-			startTime = start;
-		}
-	}
-	
 	public void doIt() throws SyntaxErrorException, InterruptedException {
 		long startTime = System.currentTimeMillis();
 		long cpuTime = getCpuTime();
@@ -72,44 +52,30 @@ public class M {
 		timeCPU = doCPUTime("CPU ",timeCPU);
 		
 		// generate
-		int n = dedekind - 2;
-		int reportRate = 10;
+		int n = dedekind - 3;
+		long reportRate = 8;
 		
-		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(n);	//different levels in hass-dagramm
-		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains in 1 equivalence-class
-
-		timePair = doTime("Generated equivalence classes at ",timePair);
-		timeCPU = doCPUTime("CPU ",timeCPU);
-
-		PrintStream ps;
-		try {
-			ps = new PrintStream("EquivalenceClasses" + n);
-
-			// collect
-			for (int i=0;i<classes.length;i++) {
-				long coeff = SmallBasicSet.combinations(n, i);
-				for (BigInteger b : classes[i].keySet()) {
-					Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
-					ps.println(SmallAntiChain.decode(b) + "," + classes[i].get(b)*coeff);
-				}	
-			}
-
-			ps.close();
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-
-		timePair = doTime("Collected equivalence classes at ",timePair);
-		timeCPU = doCPUTime("CPU ",timeCPU);
+		ArrayList<SmallAntiChain> functions = new ArrayList<>();
 		
 		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
 		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(n));
-		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		for (SmallAntiChain f : functions.keySet()) {
-			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
-			//TODO: time gain for calculating rightIntervalSizes in PCThread?
-			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
+
+		Iterator<SmallAntiChain> it = new AntiChainInterval(e,u).fastIterator();
+		while(it.hasNext()) {
+			functions.add(0, it.next());
+		}
+		
+		timePair = doTime("Generated all functions",timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		SortedMap<AntiChainInterval, BigInteger> intervalSizes = new TreeMap<AntiChainInterval, BigInteger>();
+		for (SmallAntiChain f : functions) {
+			for (SmallAntiChain g : functions) {
+				if(f.le(g)) {
+					AntiChainInterval interval = new AntiChainInterval(f,g);
+					intervalSizes.put(interval, BigInteger.valueOf(interval.latticeSize()));
+				}
+			}
 		}
 		
 		timePair = doTime("Generated interval sizes",timePair);
@@ -118,18 +84,16 @@ public class M {
 		// test
 		long evaluations = 0;
 		long newEvaluations = 0;
-		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
-		
+				
 		Collector collector = new Collector(cores);
 
-		while (it2.hasNext()) {
-			SmallAntiChain r2 = it2.next();
-			new PCThread(r2, functions, leftIntervalSize, rightIntervalSize, collector).start();
+		for(SmallAntiChain r2 : functions) {
+			new PCThread2(r2, functions, intervalSizes, collector).start();
 			newEvaluations += collector.iterations();
 			if (newEvaluations > reportRate) {
 				evaluations += newEvaluations;
 				newEvaluations = 0;
-				reportRate *= 4;
+				reportRate <<= 2;
 				timePair = doTime(String.format("%d evs\n%s val, %d processes ",evaluations, collector.getResult(), collector.numberOfProcesses()),timePair);
 				timeCPU = doCPUTime("CPU ",timeCPU);
 				System.out.println("Total thread time " + collector.time());
@@ -149,6 +113,22 @@ public class M {
 		System.out.println(String.format("%30s %15d ns","Total cpu time used ",collector.time() + getCpuTime()));
 		System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
 	}
+	
+	/************************************************************
+	 * Timing-utils												*
+	 ************************************************************/
+	
+	private class TestTime {
+		public final long previousTime;
+		public final long currentTime;
+		public final long startTime;
+		
+		public TestTime(long previous, long current, long start) {
+			previousTime = previous;
+			currentTime = current;
+			startTime = start;
+		}
+	}
 
 	private TestTime doTime(String msg, TestTime timePair) {
 		System.out.println(String.format("%s %d ms %d ms (%d ms)",msg,(timePair.previousTime - timePair.startTime),  
@@ -167,10 +147,13 @@ public class M {
 	    return bean.isCurrentThreadCpuTimeSupported( ) ?
 	        bean.getCurrentThreadCpuTime( ) : 0L;
 	}
-
+	
+	/************************************************************
+	 * Main														*
+	 ************************************************************/
 
 	public static void main(String[] args) throws NumberFormatException, SyntaxErrorException, InterruptedException {
-		new M(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
+		new M2(Integer.parseInt(args[0]), Integer.parseInt(args[1])).doIt();
 	}
-
+	
 }

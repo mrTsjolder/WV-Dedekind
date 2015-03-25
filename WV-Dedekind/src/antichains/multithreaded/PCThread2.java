@@ -1,4 +1,4 @@
-package antichains;
+package antichains.multithreaded;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -34,14 +34,17 @@ public class PCThread2 extends Thread {
 		BigInteger sumP = BigInteger.ZERO;
 		BigInteger term;
 		long evaluations = 0;
+		SmallAntiChain meet, join;
 		for (SmallAntiChain r1:functions)
 			if(r1.le(function))
 				for(SmallAntiChain r2:functions)
-					if(r2.le(function) && !r2.gt(r1)) 
+					if(r2.le(function) && !r2.gt(r1)) {
+						meet = (SmallAntiChain) r1.meet(r2);
+						join = (SmallAntiChain) r1.join(r2);
 						for(SmallAntiChain r3:functions) 
 							if (r3.le(function) && !r3.gt(r2) && !r3.gt(r1)) {
-								term = intervalSizes.get(new AntiChainInterval(SmallAntiChain.emptyAntiChain(), (SmallAntiChain) r1.meet(r2).meet(r3))).multiply(
-										intervalSizes.get(new AntiChainInterval((SmallAntiChain) r1.join(r2), function))).multiply(
+								term = intervalSizes.get(new AntiChainInterval(SmallAntiChain.emptyAntiChain(), (SmallAntiChain) meet.meet(r3))).multiply(
+										intervalSizes.get(new AntiChainInterval(join, function))).multiply(
 										intervalSizes.get(new AntiChainInterval((SmallAntiChain) r1.join(r3), function))).multiply(
 										intervalSizes.get(new AntiChainInterval((SmallAntiChain) r2.join(r3), function)));
 								if(r3.lt(r2) && r2.lt(r1)) {
@@ -56,6 +59,7 @@ public class PCThread2 extends Thread {
 								}
 								evaluations++;
 							}
+					}
 		
 		collector.register(sumP, evaluations, getCpuTime() - time);
 		collector.leave();

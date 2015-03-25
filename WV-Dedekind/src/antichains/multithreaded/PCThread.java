@@ -1,4 +1,4 @@
-package antichains;
+package antichains.multithreaded;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
