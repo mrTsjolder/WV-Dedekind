@@ -5,22 +5,23 @@ import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
 import java.util.SortedMap;
 
+import amfsmall.AntiChainInterval;
 import amfsmall.SmallAntiChain;
 import amfsmall.AntiChainSolver;
 
 public class PCThread extends Thread {
 
 	private SmallAntiChain function;
+	private SmallAntiChain upper;
 	private SortedMap<SmallAntiChain, Long> functions;
 	private SortedMap<SmallAntiChain, BigInteger> leftIntervalSize;
-	private SortedMap<SmallAntiChain, BigInteger> rightIntervalSize;
 	private Collector collector;
 
-	public PCThread(SmallAntiChain r2, SortedMap<SmallAntiChain, Long> fs, SortedMap<SmallAntiChain, BigInteger> ls, SortedMap<SmallAntiChain, BigInteger> rs, Collector cr) throws InterruptedException {
+	public PCThread(SmallAntiChain r2, SortedMap<SmallAntiChain, Long> fs, SortedMap<SmallAntiChain, BigInteger> ls, SmallAntiChain u, Collector cr) throws InterruptedException {
 		function = new SmallAntiChain(r2);
 		functions = fs;
 		leftIntervalSize = ls;
-		rightIntervalSize = rs;
+		this.upper = u;
 		collector = cr;
 		collector.enter();
 	}
@@ -41,7 +42,7 @@ public class PCThread extends Thread {
 
 			}
 		}
-		collector.register(sumP.multiply(rightIntervalSize.get(function.standard())), evaluations, getCpuTime() - time);
+		collector.register(sumP.multiply(BigInteger.valueOf(new AntiChainInterval(function,upper).latticeSize())), evaluations, getCpuTime() - time);
 		collector.leave();
 	}
 	

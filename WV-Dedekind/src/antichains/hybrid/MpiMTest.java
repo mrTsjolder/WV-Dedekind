@@ -1,11 +1,17 @@
-package antichains.mpi;
+package antichains.hybrid;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import mpi.MPI;
 import mpi.MPIException;
@@ -26,6 +32,7 @@ public class MpiMTest {
 	public static final int DIETAG = 7;
 	public static final int NUMTAG = 1;
 	
+	private ExecutorService pool;
 	private int dedekind;
 	private int nOfProc;
 	private int myRank;
@@ -47,27 +54,25 @@ public class MpiMTest {
 		this.dedekind = n - 2;
 		this.nOfProc = nOfProc;
 		this.myRank = rank;
+		this.pool = Executors.newCachedThreadPool();
 	}
 	
-	private void doIt() throws SyntaxErrorException, MPIException{
+	private void doIt() throws SyntaxErrorException, MPIException, InterruptedException, ExecutionException {
 		BigInteger sum = BigInteger.ZERO;
 		
 		long startTime = System.currentTimeMillis();
 		long cpuTime = getCpuTime();
-		
-		TestTime timePair = null;
-		TestTime timeCPU = null;
 
+		TestTime timePair = new TestTime(startTime, startTime, startTime);
+		TestTime timeCPU = new TestTime(cpuTime, cpuTime, cpuTime);
+		
 		if(myRank == 0) {
-			timePair = new TestTime(startTime, startTime, startTime);
-			timeCPU = new TestTime(cpuTime, cpuTime, cpuTime);
-			
 			timePair = doTime("Starting at ", timePair);
 			timeCPU = doCPUTime("CPU ",timeCPU);
 		}
 		
 		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(dedekind);		//different levels in hass-dagramm
-		SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains.hybrid in 1 equivalence-class
+		final SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains.hybrid in 1 equivalence-class
 
 		if(myRank == 0) {
 			timePair = doTime("Generated equivalence classes at ",timePair);
@@ -87,10 +92,22 @@ public class MpiMTest {
 			timeCPU = doCPUTime("CPU ",timeCPU);
 		}
 		
-		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
-		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		for (SmallAntiChain f : functions.keySet()) {
-			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
+		final SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+		final SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
+		TreeMap<SmallAntiChain, Future<BigInteger>> temp = new TreeMap<>();
+		for (final SmallAntiChain f : functions.keySet()) {
+			temp.put(f, pool.submit(new Callable<BigInteger>() {
+
+				@Override
+				public BigInteger call() throws Exception {
+					return BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize());
+				}
+				
+			}));
+		}
+		
+		for(SmallAntiChain f : temp.keySet()) {
+			leftIntervalSize.put(f, temp.get(f).get());
 		}
 		
 		if(myRank == 0) {
@@ -98,47 +115,71 @@ public class MpiMTest {
 			timeCPU = doCPUTime("CPU ",timeCPU);
 		}
 		
-		long evaluations = 0;
-		int counter = nOfProc - 1;
+		int counter = 0;
+		long nrThreads = 0;
+		long report = 64;
 
+		ArrayList<Future<BigInteger>> results = new ArrayList<>();
 
 		Iterator<SmallAntiChain> it2 = AntiChainInterval.fullSpace(dedekind).fastIterator();
-		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
+		final SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
+		
+		timePair = doTime(String.format("Proces %d started threading at", myRank), timePair);
+		timeCPU = doCPUTime("CPU ", timeCPU);
 		
 		while(it2.hasNext()) {
-			SmallAntiChain function = it2.next();
+			final SmallAntiChain function = it2.next();
 			if(counter++ == myRank) {
-				BigInteger sumP = BigInteger.ZERO;
-				for (SmallAntiChain r1:functions.keySet()) {
-					if (r1.le(function)) {
-						sumP = sumP.add(
-								BigInteger.valueOf(functions.get(r1)).multiply(
-									leftIntervalSize.get(r1)).multiply(
-									AntiChainSolver.PatricksCoefficient(r1, function))
-								);
-						evaluations++;
+				results.add(pool.submit(new Callable<BigInteger>() {
+
+					@Override
+					public BigInteger call() throws Exception {
+						BigInteger sumP = BigInteger.ZERO;
+						for (SmallAntiChain r1:functions.keySet()) {
+							if (r1.le(function)) {
+								sumP = sumP.add(
+										BigInteger.valueOf(functions.get(r1)).multiply(
+											leftIntervalSize.get(r1)).multiply(
+											AntiChainSolver.PatricksCoefficient(r1, function))
+										);
+							}
+						}
+						return sumP.multiply(BigInteger.valueOf(new AntiChainInterval(function, u).latticeSize()));
 					}
+					
+				}));
+				if(myRank == 0 && nrThreads++ > report) {
+					System.out.println(String.format("reached iteration %d", nrThreads));
+					report <<= 2;
 				}
-				sum = sum.add(sumP.multiply(BigInteger.valueOf(new AntiChainInterval(function, u).latticeSize())));
 			}
 			counter %= nOfProc;
 		}
+
+		for(Future<BigInteger> sumP : results)
+			sum = sum.add(sumP.get());
 		
-		System.out.println("Proces " + myRank + " calculated " + sum + " in " + evaluations + " evaluations");
+		if(myRank != counter) {
+			timePair = doTime(String.format("Proces %d calculated %s", myRank, sum), timePair);
+			timeCPU = doCPUTime("CPU ", timeCPU);
+		}
 		
-		if(myRank == 0) {
+		if(myRank == counter) {
+			counter++;
+			counter %= nOfProc;
 			
-			timePair = doTime(String.format("%d evs\n%s val",evaluations, sum),timePair);
+			timePair = doTime(String.format("Proces %d calculated %s", myRank, sum),timePair);
 			timeCPU = doCPUTime("Finishing ",timeCPU);
 			
 			int[] intbuf;
 			byte[] bigbuf;
-			for(int i = 1; i < nOfProc; i++) {
+			while(counter != myRank) {
 				intbuf = new int[1];
-				MPI.COMM_WORLD.recv(intbuf, 1, MPI.INT, i, NUMTAG);
+				MPI.COMM_WORLD.recv(intbuf, 1, MPI.INT, counter, NUMTAG);
 				bigbuf = new byte[intbuf[0]];
-				MPI.COMM_WORLD.recv(bigbuf, bigbuf.length, MPI.BYTE, i, MPI.ANY_TAG);
+				MPI.COMM_WORLD.recv(bigbuf, bigbuf.length, MPI.BYTE, counter++, MPI.ANY_TAG);
 				sum = sum.add(new BigInteger(bigbuf));
+				counter %= nOfProc;
 			}
 
 			System.out.println("\n" + sum);
@@ -147,19 +188,17 @@ public class MpiMTest {
 			System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
 		} else {
 			byte[] bigbuf = sum.toByteArray();
-			MPI.COMM_WORLD.send(new int[]{bigbuf.length}, 1, MPI.INT, 0, NUMTAG);
-			MPI.COMM_WORLD.send(bigbuf, bigbuf.length, MPI.BYTE, 0, 0);
+			MPI.COMM_WORLD.send(new int[]{bigbuf.length}, 1, MPI.INT, counter, NUMTAG);
+			MPI.COMM_WORLD.send(bigbuf, bigbuf.length, MPI.BYTE, counter, 0);
 		}
 		
 	}
-	
-	
 	
 	/************************************************************
 	 * Timing-utils												*
 	 ************************************************************/
 	
-	private final class TestTime {
+	private static final class TestTime {
 		public final long previousTime;
 		public final long currentTime;
 		public final long startTime;
@@ -172,15 +211,17 @@ public class MpiMTest {
 	}
 
 	private TestTime doTime(String msg, TestTime timePair) {
-		System.out.println(String.format("%s %d ms %d ms (%d ms)", msg, (timePair.previousTime - timePair.startTime),  
-				 (timePair.currentTime - timePair.startTime), (timePair.currentTime - timePair.previousTime)));
-		return new TestTime(timePair.currentTime, System.currentTimeMillis(), timePair.startTime);
+		TestTime result = new TestTime(timePair.currentTime, System.currentTimeMillis(), timePair.startTime);
+		System.out.println(String.format("%s %d ms %d ms (%d ms)",msg,(result.previousTime - result.startTime),  
+				 (result.currentTime - result.startTime),(-result.previousTime + result.currentTime)));
+		return result;
 	}
 
 	private TestTime doCPUTime(String msg, TestTime timePair) {
+		TestTime result = new TestTime(timePair.currentTime, getCpuTime(), timePair.startTime);
 		System.out.println(String.format("%s : %d ns (+ %d ns)", msg,  
-				 (timePair.currentTime - timePair.startTime), (timePair.currentTime - timePair.previousTime)));
-		return new TestTime(timePair.currentTime, getCpuTime(), timePair.startTime);
+				 (result.currentTime - result.startTime), (result.currentTime - result.previousTime)));
+		return result;
 	}
 	
 	private long getCpuTime( ) {
@@ -193,7 +234,7 @@ public class MpiMTest {
 	 * Main														*
 	 ************************************************************/
 	
-	public static void main(String[] args) throws MPIException, SyntaxErrorException, InterruptedException {
+	public static void main(String[] args) throws MPIException, SyntaxErrorException, InterruptedException, ExecutionException {
 		MPI.Init(args);
 
 		int myRank = MPI.COMM_WORLD.getRank();
@@ -201,6 +242,7 @@ public class MpiMTest {
 		
 		MpiMTest node = new MpiMTest(Integer.parseInt(args[0]), nOfProc, myRank);
 		node.doIt();
+		node.pool.shutdown();
 		
 		MPI.Finalize();
 	}

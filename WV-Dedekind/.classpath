@@ -12,5 +12,6 @@
 			<attribute name="javadoc_location" value="file:/Users/PieterJan/Downloads/openmpi-1.8.3/ompi/mpi/java/java/doc/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/Users/PieterJan/Downloads/fst-2.24/lib/fst-2.24.jar" sourcepath="/Users/PieterJan/Downloads/fst-2.24/src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

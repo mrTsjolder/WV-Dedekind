@@ -12,7 +12,7 @@ import amfsmall.AntiChainInterval;
 public class PCThread2 extends Thread {
 
 	private SmallAntiChain function;
-	private ArrayList<SmallAntiChain>functions;
+	private ArrayList<SmallAntiChain> functions;
 	private SortedMap<AntiChainInterval, BigInteger> intervalSizes;
 	private Collector collector;
 

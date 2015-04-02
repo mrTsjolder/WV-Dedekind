@@ -100,11 +100,11 @@ public class AntiChainSolver {
 	 * 			mapping the equivalence classes of dimension n (in BigInteger representation) to their sizes
 	 * @return 	return maps the equivalence classes of dimensions n+1 (in BigInteger representation) to their sizes
 	 */
-	private static SortedMap<BigInteger,Long> algorithm7(long n, SortedMap<BigInteger, Long> S) {
+	private static SortedMap<BigInteger,Long> algorithm7(int n, SortedMap<BigInteger, Long> S) {
 		SortedMap<BigInteger,Long> S1 = new TreeMap<BigInteger, Long>();
-		SmallAntiChain alfa = SmallAntiChain.universeAntiChain((int) n);
-		SmallAntiChain u = SmallAntiChain.universeAntiChain((int) (n+1));
-		SmallAntiChain l = SmallAntiChain.singletonAntiChain((int) (n+1));
+		SmallAntiChain alfa = SmallAntiChain.universeAntiChain(n);
+		SmallAntiChain u = SmallAntiChain.universeAntiChain(n+1);
+		SmallAntiChain l = SmallAntiChain.singletonAntiChain(n+1);
 		for (BigInteger tCode : S.keySet()) {
 			SmallAntiChain t = SmallAntiChain.decode(tCode);
 			Set<int[]> rtsymm = (t.join(l)).symmetryGroup();

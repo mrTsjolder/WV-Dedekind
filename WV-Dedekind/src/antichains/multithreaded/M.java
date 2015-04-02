@@ -105,11 +105,8 @@ public class M {
 		SmallAntiChain e = SmallAntiChain.emptyAntiChain();
 		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(n));
 		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		SortedMap<SmallAntiChain, BigInteger> rightIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
 		for (SmallAntiChain f : functions.keySet()) {
 			leftIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize()));
-			//TODO: time gain for calculating rightIntervalSizes in PCThread?
-			rightIntervalSize.put(f, BigInteger.valueOf(new AntiChainInterval(f,u).latticeSize()));
 		}
 		
 		timePair = doTime("Generated interval sizes",timePair);
@@ -124,7 +121,7 @@ public class M {
 
 		while (it2.hasNext()) {
 			SmallAntiChain r2 = it2.next();
-			new PCThread(r2, functions, leftIntervalSize, rightIntervalSize, collector).start();
+			new PCThread(r2, functions, leftIntervalSize, u, collector).start();
 			newEvaluations += collector.iterations();
 			if (newEvaluations > reportRate) {
 				evaluations += newEvaluations;
