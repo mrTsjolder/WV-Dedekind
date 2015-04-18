@@ -1,5 +1,10 @@
 package antichains.hybrid;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.math.BigInteger;
@@ -29,7 +34,6 @@ import amfsmall.SyntaxErrorException;
  */
 public class MpiMTest {
 	
-	public static final int DIETAG = 7;
 	public static final int NUMTAG = 1;
 	
 	private ExecutorService pool;
@@ -57,75 +61,117 @@ public class MpiMTest {
 		this.pool = Executors.newCachedThreadPool();
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void doIt() throws SyntaxErrorException, MPIException, InterruptedException, ExecutionException {
-		BigInteger sum = BigInteger.ZERO;
-		
 		long startTime = System.currentTimeMillis();
 		long cpuTime = getCpuTime();
 
 		TestTime timePair = new TestTime(startTime, startTime, startTime);
 		TestTime timeCPU = new TestTime(cpuTime, cpuTime, cpuTime);
 		
-		if(myRank == 0) {
-			timePair = doTime("Starting at ", timePair);
-			timeCPU = doCPUTime("CPU ",timeCPU);
-		}
+//		if(myRank == 0) {
+//			timePair = doTime("Starting at ", timePair);
+//			timeCPU = doCPUTime("CPU ",timeCPU);
+//		}
+//		
+//		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(dedekind);		//different levels in hass-dagramm
+//		final SortedMap<SmallAntiChain, Long> functions = new TreeMap<>();			//number of antichains.hybrid in 1 equivalence-class
+//
+//		if(myRank == 0) {
+//			timePair = doTime("Generated equivalence classes at ",timePair);
+//			timeCPU = doCPUTime("CPU ",timeCPU);
+//		}
+//		
+//		// collect
+//		for (int i=0;i<classes.length;i++) {
+//			long coeff = SmallBasicSet.combinations(dedekind, i);
+//			for (BigInteger b : classes[i].keySet()) {
+//				Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
+//			}	
+//		}
+//		
+//		if(myRank == 0) {
+//			timePair = doTime("Collected equivalence classes at ",timePair);
+//			timeCPU = doCPUTime("CPU ",timeCPU);
+//		}
+//		
+//		final SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+//		final SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<>();
+//		TreeMap<SmallAntiChain, Future<BigInteger>> temp = new TreeMap<>();
+//		for (final SmallAntiChain f : functions.keySet()) {
+//			temp.put(f, pool.submit(new Callable<BigInteger>() {
+//
+//				@Override
+//				public BigInteger call() throws Exception {
+//					return BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize());
+//				}
+//				
+//			}));
+//		}
+//		
+//		for(SmallAntiChain f : temp.keySet()) {
+//			leftIntervalSize.put(f, temp.get(f).get());
+//		}
+//		
+//		if(myRank == 0) {
+//			timePair = doTime("Generated interval sizes",timePair);
+//			timeCPU = doCPUTime("CPU ",timeCPU);
+//		}
 		
-		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(dedekind);		//different levels in hass-dagramm
-		final SortedMap<SmallAntiChain, Long> functions = new TreeMap<SmallAntiChain, Long>();			//number of antichains.hybrid in 1 equivalence-class
+		int[] num = new int[1];
+		MPI.COMM_WORLD.bcast(num, 1, MPI.INT, 0);
+		byte[] bcastbuf = new byte[num[0]];
+		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
+		
+		SortedMap<SmallAntiChain, ?>[] obj = (SortedMap[]) deserialize(bcastbuf);
 
-		if(myRank == 0) {
-			timePair = doTime("Generated equivalence classes at ",timePair);
-			timeCPU = doCPUTime("CPU ",timeCPU);
-		}
-		
-		// collect
-		for (int i=0;i<classes.length;i++) {
-			long coeff = SmallBasicSet.combinations(dedekind, i);
-			for (BigInteger b : classes[i].keySet()) {
-				Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
-			}	
-		}
-		
-		if(myRank == 0) {
-			timePair = doTime("Collected equivalence classes at ",timePair);
-			timeCPU = doCPUTime("CPU ",timeCPU);
-		}
-		
-		final SmallAntiChain e = SmallAntiChain.emptyAntiChain();
-		final SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<SmallAntiChain, BigInteger>();
-		TreeMap<SmallAntiChain, Future<BigInteger>> temp = new TreeMap<>();
-		for (final SmallAntiChain f : functions.keySet()) {
-			temp.put(f, pool.submit(new Callable<BigInteger>() {
-
-				@Override
-				public BigInteger call() throws Exception {
-					return BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize());
-				}
-				
-			}));
-		}
-		
-		for(SmallAntiChain f : temp.keySet()) {
-			leftIntervalSize.put(f, temp.get(f).get());
-		}
-		
-		if(myRank == 0) {
-			timePair = doTime("Generated interval sizes",timePair);
-			timeCPU = doCPUTime("CPU ",timeCPU);
-		}
-		
-		int counter = 0;
-		long nrThreads = 0;
-		long report = 64;
-
-		ArrayList<Future<BigInteger>> results = new ArrayList<>();
-
-		Iterator<SmallAntiChain> it2 = AntiChainInterval.fullSpace(dedekind).fastIterator();
-		final SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
+		SortedMap<SmallAntiChain, Long> functions = (SortedMap<SmallAntiChain, Long>) obj[0];
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = (SortedMap<SmallAntiChain, BigInteger>) obj[1];
 		
 		timePair = doTime(String.format("Proces %d started threading at", myRank), timePair);
 		timeCPU = doCPUTime("CPU ", timeCPU);
+
+		BigInteger sum = doThreading(functions, leftIntervalSize);
+		
+		timePair = doTime(String.format("Proces %d calculated %s", myRank, sum), timePair);
+		timeCPU = doCPUTime("CPU ", timeCPU);
+		
+//		if(myRank == counter) {
+//			counter++;
+//			counter %= nOfProc;
+//			
+//			timePair = doTime(String.format("Proces %d calculated %s", myRank, sum),timePair);
+//			timeCPU = doCPUTime("Finishing ",timeCPU);
+//			
+//			int[] intbuf;
+//			byte[] bigbuf;
+//			while(counter != myRank) {
+//				intbuf = new int[1];
+//				MPI.COMM_WORLD.recv(intbuf, 1, MPI.INT, counter, NUMTAG);
+//				bigbuf = new byte[intbuf[0]];
+//				MPI.COMM_WORLD.recv(bigbuf, bigbuf.length, MPI.BYTE, counter++, MPI.ANY_TAG);
+//				sum = sum.add(new BigInteger(bigbuf));
+//				counter %= nOfProc;
+//			}
+//
+//			System.out.println("\n" + sum);
+//			timeCPU = doCPUTime("Finished ",timeCPU);
+//			timeCPU = doCPUTime("CPU ",timeCPU);
+//			System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
+//		} else {
+			byte[] bigbuf = sum.toByteArray();
+			MPI.COMM_WORLD.send(new int[]{bigbuf.length}, 1, MPI.INT, 0, NUMTAG);
+			MPI.COMM_WORLD.send(bigbuf, bigbuf.length, MPI.BYTE, 0, 0);
+//		}
+		
+	}
+
+	private BigInteger doThreading(final SortedMap<SmallAntiChain, Long> functions, final SortedMap<SmallAntiChain, BigInteger> leftIntervalSize)
+			throws InterruptedException, ExecutionException {
+		int counter = 0;
+		final SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
+		Iterator<SmallAntiChain> it2 = AntiChainInterval.fullSpace(dedekind).fastIterator();
+		ArrayList<Future<BigInteger>> results = new ArrayList<>();
 		
 		while(it2.hasNext()) {
 			final SmallAntiChain function = it2.next();
@@ -148,50 +194,139 @@ public class MpiMTest {
 					}
 					
 				}));
-				if(myRank == 0 && nrThreads++ > report) {
-					System.out.println(String.format("reached iteration %d", nrThreads));
-					report <<= 2;
-				}
 			}
 			counter %= nOfProc;
 		}
-
+		
+		BigInteger sum = BigInteger.ZERO;
 		for(Future<BigInteger> sumP : results)
 			sum = sum.add(sumP.get());
-		
-		if(myRank != counter) {
-			timePair = doTime(String.format("Proces %d calculated %s", myRank, sum), timePair);
-			timeCPU = doCPUTime("CPU ", timeCPU);
-		}
-		
-		if(myRank == counter) {
-			counter++;
-			counter %= nOfProc;
-			
-			timePair = doTime(String.format("Proces %d calculated %s", myRank, sum),timePair);
-			timeCPU = doCPUTime("Finishing ",timeCPU);
-			
-			int[] intbuf;
-			byte[] bigbuf;
-			while(counter != myRank) {
-				intbuf = new int[1];
-				MPI.COMM_WORLD.recv(intbuf, 1, MPI.INT, counter, NUMTAG);
-				bigbuf = new byte[intbuf[0]];
-				MPI.COMM_WORLD.recv(bigbuf, bigbuf.length, MPI.BYTE, counter++, MPI.ANY_TAG);
-				sum = sum.add(new BigInteger(bigbuf));
-				counter %= nOfProc;
-			}
+		return sum;
+	}
+	
+	private void doItThoroughly() throws SyntaxErrorException, InterruptedException, ExecutionException, MPIException {
+		long startTime = System.currentTimeMillis();
+		long cpuTime = getCpuTime();
 
-			System.out.println("\n" + sum);
-			timeCPU = doCPUTime("Finished ",timeCPU);
-			timeCPU = doCPUTime("CPU ",timeCPU);
-			System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
-		} else {
-			byte[] bigbuf = sum.toByteArray();
-			MPI.COMM_WORLD.send(new int[]{bigbuf.length}, 1, MPI.INT, counter, NUMTAG);
-			MPI.COMM_WORLD.send(bigbuf, bigbuf.length, MPI.BYTE, counter, 0);
+		TestTime timePair = new TestTime(startTime, startTime, startTime);
+		TestTime timeCPU = new TestTime(cpuTime, cpuTime, cpuTime);
+		
+		timePair = doTime("Starting at ", timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		SortedMap<BigInteger, Long>[] classes = AntiChainSolver.equivalenceClasses(dedekind);		//different levels in hass-dagramm
+		SortedMap<SmallAntiChain, Long> functions = new TreeMap<>();			//number of antichains.hybrid in 1 equivalence-class
+
+		timePair = doTime("Generated equivalence classes at ",timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		// collect
+		for (int i=0;i<classes.length;i++) {
+			long coeff = SmallBasicSet.combinations(dedekind, i);
+			for (BigInteger b : classes[i].keySet()) {
+				Storage.store(functions, SmallAntiChain.decode(b),classes[i].get(b)*coeff);
+			}	
 		}
 		
+		timePair = doTime("Collected equivalence classes at ",timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		final SmallAntiChain e = SmallAntiChain.emptyAntiChain();
+		TreeMap<SmallAntiChain, Future<BigInteger>> temp = new TreeMap<>();
+		for (final SmallAntiChain f : functions.keySet()) {
+			temp.put(f, pool.submit(new Callable<BigInteger>() {
+
+				@Override
+				public BigInteger call() throws Exception {
+					return BigInteger.valueOf(new AntiChainInterval(e,f).latticeSize());
+				}
+				
+			}));
+		}
+		
+		SortedMap<SmallAntiChain, BigInteger> leftIntervalSize = new TreeMap<>();
+		for(SmallAntiChain f : temp.keySet()) {
+			leftIntervalSize.put(f, temp.get(f).get());
+		}
+		
+		timePair = doTime("Generated interval sizes",timePair);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		
+		byte[] bcastbuf = serialize(new SortedMap[]{functions, leftIntervalSize});
+		
+		MPI.COMM_WORLD.bcast(new int[]{bcastbuf.length}, 1, MPI.INT, 0);
+		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
+		
+		timePair = doTime("Broadcast completed", timePair);
+		timeCPU = doCPUTime("CPU", timeCPU);
+		
+		BigInteger sum = doThreading(functions, leftIntervalSize);
+		
+		timePair = doTime(String.format("Proces %d calculated %s", myRank, sum), timePair);
+		timeCPU = doCPUTime("Finishing", timeCPU);
+		
+		int[] intbuf = new int[1];
+		byte[] bigbuf;
+		for(int i = 1; i < this.nOfProc; i++) {
+			MPI.COMM_WORLD.recv(intbuf, 1, MPI.INT, i, NUMTAG);
+			bigbuf = new byte[intbuf[0]];
+			MPI.COMM_WORLD.recv(bigbuf, bigbuf.length, MPI.BYTE, i, MPI.ANY_TAG);
+			sum = sum.add(new BigInteger(bigbuf));
+		}
+
+		System.out.println("\n" + sum);
+		timeCPU = doCPUTime("Finished ",timeCPU);
+		timeCPU = doCPUTime("CPU ",timeCPU);
+		System.out.println(String.format("%30s %15d ms","Total time elapsed ",System.currentTimeMillis() - startTime));
+	}
+	
+	/************************************************************
+	 * Serializing-utils										*
+	 ************************************************************/
+
+	/**
+	 * Serialize an object in order to send it over MPI.
+	 * 
+	 * @param 	object
+	 * 			The object to be serialized.
+	 * @return	a byte array representing the serialized object.
+	 * 			This array contains no elements if something went wrong.
+	 */
+	private byte[] serialize(Object object) {
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    ObjectOutputStream oos = null;
+		try {
+		    oos = new ObjectOutputStream(baos);
+		    oos.writeObject(object);
+		    oos.flush();
+		    oos.close();
+		    return baos.toByteArray();
+		} 
+		catch (IOException ioe) {
+		   	ioe.printStackTrace();   
+		}
+		return new byte[0];
+	}
+	
+	/**
+	 * Deserialize a byte array received through MPI.
+	 * 
+	 * @param	bytes
+	 * 			The byte array to be deserialized.
+	 * @return	the object that was represented by this byte array.
+	 * 			The object will be null if something went wrong.
+	 */
+	private Object deserialize(byte[] bytes) {
+		try { 
+		    ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+		    ObjectInputStream ois = new ObjectInputStream(bis);
+		    return ois.readObject();
+		} catch (IOException ioe) {
+		    ioe.printStackTrace();
+		} catch (ClassNotFoundException cnfe) {
+			cnfe.printStackTrace();
+		}
+		return null;
 	}
 	
 	/************************************************************
@@ -241,7 +376,11 @@ public class MpiMTest {
 		int nOfProc = MPI.COMM_WORLD.getSize();
 		
 		MpiMTest node = new MpiMTest(Integer.parseInt(args[0]), nOfProc, myRank);
-		node.doIt();
+		
+		if(myRank == 0)
+			node.doItThoroughly();
+		else
+			node.doIt();
 		node.pool.shutdown();
 		
 		MPI.Finalize();
