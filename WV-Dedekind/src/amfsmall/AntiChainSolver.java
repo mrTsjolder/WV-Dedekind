@@ -1,11 +1,16 @@
 package amfsmall;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Solver class for systems of equations in SmallAntiChains
@@ -75,15 +80,17 @@ public class AntiChainSolver {
 	 * @return 	array of maps, mapping each biginteger to the size of the equivalence class it represents
 	 * @throws 	SyntaxErrorException
 	 */
-	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till) throws SyntaxErrorException {
+	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till, ExecutorService... pools) throws SyntaxErrorException {
+		if(pools.length < 1)
+			pools = new ExecutorService[]{ Executors.newFixedThreadPool(1) };
 		@SuppressWarnings("unchecked")
-		SortedMap<BigInteger, Long>[] reS = new TreeMap[till+1];
+		SortedMap<BigInteger, Long>[] reS = new SortedMap[till+1];
 		reS[0] = new TreeMap<BigInteger,Long>();
 		Storage.store(reS[0],SmallAntiChain.emptyAntiChain().standard().encode());
 		Storage.store(reS[0],SmallAntiChain.emptySetAntiChain().standard().encode());
 		int n = 0;
 		while (n < till) {
-			reS[n+1] = algorithm7(n,reS[n]);
+			reS[n+1] = algorithm7(n,reS[n], pools[0]);
 			n++;
 		}
 		return reS;
@@ -100,26 +107,43 @@ public class AntiChainSolver {
 	 * 			mapping the equivalence classes of dimension n (in BigInteger representation) to their sizes
 	 * @return 	return maps the equivalence classes of dimensions n+1 (in BigInteger representation) to their sizes
 	 */
-	private static SortedMap<BigInteger,Long> algorithm7(int n, SortedMap<BigInteger, Long> S) {
-		SortedMap<BigInteger,Long> S1 = new TreeMap<BigInteger, Long>();
-		SmallAntiChain alfa = SmallAntiChain.universeAntiChain(n);
-		SmallAntiChain u = SmallAntiChain.universeAntiChain(n+1);
-		SmallAntiChain l = SmallAntiChain.singletonAntiChain(n+1);
-		for (BigInteger tCode : S.keySet()) {
-			SmallAntiChain t = SmallAntiChain.decode(tCode);
-			Set<int[]> rtsymm = (t.join(l)).symmetryGroup();
-			SortedMap<BigInteger, Long> St = new TreeMap<BigInteger, Long>();
-			//TODO: lose deprecated...
-			for (SmallAntiChain x : new AntiChainInterval(t.join(l),u.omicron(t, alfa))) {
-				BigInteger b = x.standard(rtsymm).encode(); 
-				Storage.store(St, b);
-			}
-			for (BigInteger b : St.keySet()) {
-				SmallAntiChain x = SmallAntiChain.decode(b);
-				BigInteger code = x.standard().encode();
-				Storage.store(S1,code,St.get(b)*S.get(tCode));
-			}
+	private static SortedMap<BigInteger,Long> algorithm7(int n, final SortedMap<BigInteger, Long> S, ExecutorService pool) {
+		final SortedMap<BigInteger,Long> S1 = new TreeMap<BigInteger, Long>();
+		final SmallAntiChain alfa = SmallAntiChain.universeAntiChain(n);
+		final SmallAntiChain u = SmallAntiChain.universeAntiChain(n+1);
+		final SmallAntiChain l = SmallAntiChain.singletonAntiChain(n+1);
+		Future<?>[] list = new Future[S.size()];
+		int i = 0;
+		for (final BigInteger tCode : S.keySet()) {
+			list[i++] = pool.submit(new Runnable() {
+
+				@Override
+				public void run() {
+					SmallAntiChain t = SmallAntiChain.decode(tCode);
+					Set<int[]> rtsymm = (t.join(l)).symmetryGroup();
+					SortedMap<BigInteger, Long> St = new TreeMap<BigInteger, Long>();
+					//TODO: lose deprecated...
+					for (SmallAntiChain x : new AntiChainInterval(t.join(l),u.omicron(t, alfa))) {
+						BigInteger b = x.standard(rtsymm).encode(); 
+						Storage.store(St, b);
+					}
+					for (BigInteger b : St.keySet()) {
+						SmallAntiChain x = SmallAntiChain.decode(b);
+						BigInteger code = x.standard().encode();
+						Storage.store(S1,code,St.get(b)*S.get(tCode));
+					}
+				}
+				
+			});
 		}
+		
+		try {
+			for(Future<?> f : list)
+				f.get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+		}
+		
 		return S1;
 	}
 }

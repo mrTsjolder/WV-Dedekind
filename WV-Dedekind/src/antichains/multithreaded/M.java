@@ -148,15 +148,17 @@ public class M {
 	}
 
 	private TestTime doTime(String msg, TestTime timePair) {
-		System.out.println(String.format("%s %d ms %d ms (%d ms)",msg,(timePair.previousTime - timePair.startTime),  
-				 (timePair.currentTime - timePair.startTime),(-timePair.previousTime + timePair.currentTime)));
-		return new TestTime(timePair.currentTime, System.currentTimeMillis(), timePair.startTime);
+		TestTime temp = new TestTime(timePair.currentTime, System.currentTimeMillis(), timePair.startTime);
+		System.out.println(String.format("%s %d ms %d ms (%d ms)",msg,(temp.previousTime - temp.startTime),  
+				 (temp.currentTime - temp.startTime),(-temp.previousTime + temp.currentTime)));
+		return temp;
 	}
 
 	private TestTime doCPUTime(String msg, TestTime timePair) {
+		TestTime temp = new TestTime(timePair.currentTime, getCpuTime(), timePair.startTime);
 		System.out.println(String.format("%s : %d ns (+ %d ns)",msg,  
-				 (timePair.currentTime - timePair.startTime),(-timePair.previousTime + timePair.currentTime)));
-		return new TestTime(timePair.currentTime, getCpuTime(), timePair.startTime);
+				 (temp.currentTime - temp.startTime),(-temp.previousTime + temp.currentTime)));
+		return temp;
 	}
 
 	public long getCpuTime( ) {

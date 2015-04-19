@@ -36,7 +36,6 @@ public class MpiM {
 	
 	public static final int DIETAG = 7;
 	public static final int NUMTAG = 1;
-	public static final int INITTAG = 3;
 	
 	private final int dedekind;
 	private final int nOfProc;
@@ -118,9 +117,12 @@ public class MpiM {
 
 		byte[] bcastbuf = serialize(new SortedMap[]{functions, leftIntervalSize});
 		
-		timePair = doTime("Serialization complete", timePair);
+		MPI.COMM_WORLD.bcast(new int[]{bcastbuf.length}, 1, MPI.INT, 0);
+		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
+		
+		timePair = doTime("Broadcast complete", timePair);
 		timeCPU = doCPUTime("CPU ",timeCPU);
-
+		
 		// test
 		long reportRate = 8;
 		long evaluations = 0;
@@ -130,8 +132,6 @@ public class MpiM {
 		
 		int x = 0;
 		for(int i = 1; i < nOfProc; i++) {
-			MPI.COMM_WORLD.send(new int[]{bcastbuf.length}, 1, MPI.INT, i, INITTAG);
-			MPI.COMM_WORLD.send(bcastbuf, bcastbuf.length, MPI.BYTE, i, INITTAG);
 			if(it2.hasNext()) {
 				acbuf = it2.next().toLongArray();
 				MPI.COMM_WORLD.send(new int[]{acbuf.length}, 1, MPI.INT, i, NUMTAG);
@@ -193,9 +193,9 @@ public class MpiM {
 		SmallAntiChain u = SmallAntiChain.oneSetAntiChain(SmallBasicSet.universe(dedekind));
 		SmallAntiChain function;
 		
-		MPI.COMM_WORLD.recv(num, 1, MPI.INT, 0, INITTAG);
+		MPI.COMM_WORLD.bcast(num, 1, MPI.INT, 0);
 		byte[] bcastbuf = new byte[num[0]];
-		MPI.COMM_WORLD.recv(bcastbuf, bcastbuf.length, MPI.BYTE, 0, INITTAG);
+		MPI.COMM_WORLD.bcast(bcastbuf, bcastbuf.length, MPI.BYTE, 0);
 		
 		SortedMap<SmallAntiChain, ?>[] obj = (SortedMap[]) deserialize(bcastbuf);
 
