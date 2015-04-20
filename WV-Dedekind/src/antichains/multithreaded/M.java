@@ -117,6 +117,7 @@ public class M {
 		long newEvaluations = 0;
 		Iterator<SmallAntiChain> it2 = new AntiChainInterval(e,u).fastIterator();
 		
+		//TODO: ThreadPools might be useful to increase speed of parallelization.
 		Collector collector = new Collector(cores);
 
 		while (it2.hasNext()) {

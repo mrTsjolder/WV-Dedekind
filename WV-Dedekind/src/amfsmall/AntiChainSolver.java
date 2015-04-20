@@ -1,7 +1,6 @@
 package amfsmall;
 
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -77,11 +76,15 @@ public class AntiChainSolver {
 	 * This is based on algorithm 9 in "Ten Beuatiful formula..."
 	 * 
 	 * @param 	till
+	 * @param	pools
+	 * 			The first pool of pools is being used for calculation. If no pools are given, 
+	 * 			{@link Executors#newFixedThreadPool(int)} will provide a pool with 1 thread.
 	 * @return 	array of maps, mapping each biginteger to the size of the equivalence class it represents
 	 * @throws 	SyntaxErrorException
 	 */
 	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till, ExecutorService... pools) throws SyntaxErrorException {
-		if(pools.length < 1)
+		int temp = pools.length;
+		if(temp < 1)
 			pools = new ExecutorService[]{ Executors.newFixedThreadPool(1) };
 		@SuppressWarnings("unchecked")
 		SortedMap<BigInteger, Long>[] reS = new SortedMap[till+1];
@@ -93,6 +96,8 @@ public class AntiChainSolver {
 			reS[n+1] = algorithm7(n,reS[n], pools[0]);
 			n++;
 		}
+		if(temp < 1)
+			pools[0].shutdown();
 		return reS;
 	}
 
@@ -105,6 +110,8 @@ public class AntiChainSolver {
 	 * 			the dimension of the given set of equivalence classes
 	 * @param 	S 
 	 * 			mapping the equivalence classes of dimension n (in BigInteger representation) to their sizes
+	 * @param	pool
+	 * 			Executorservice that allows to execute runnables and callables by a certain amount of threads.
 	 * @return 	return maps the equivalence classes of dimensions n+1 (in BigInteger representation) to their sizes
 	 */
 	private static SortedMap<BigInteger,Long> algorithm7(int n, final SortedMap<BigInteger, Long> S, ExecutorService pool) {
