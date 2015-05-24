@@ -11,6 +11,8 @@ import amfsmall.AntiChainInterval;
 
 /**
  * A failed attempt to implement the new formula.
+ * 
+ * @author Pieter-Jan
  */
 public class PCThread2 extends Thread {
 

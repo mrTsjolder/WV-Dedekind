@@ -22,6 +22,8 @@ import amfsmall.SmallBasicSet;
 import amfsmall.Storage;
 
 /**
+ * A class that allows to calculate the nth Dedekind number over MPI.
+ * This is implemented with the naive implementation as described in the bachelor thesis of Pieter-Jan Hoedt.
  * 
  * @author Pieter-Jan
  *

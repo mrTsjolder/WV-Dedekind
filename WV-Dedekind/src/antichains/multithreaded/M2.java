@@ -15,6 +15,8 @@ import amfsmall.SyntaxErrorException;
 
 /**
  * A failed attempt to implement the new formula.
+ * 
+ * @author Pieter-Jan
  */
 public class M2 {
 	
