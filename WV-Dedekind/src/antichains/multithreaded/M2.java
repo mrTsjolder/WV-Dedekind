@@ -13,6 +13,9 @@ import amfsmall.AntiChainInterval;
 import amfsmall.SmallBasicSet;
 import amfsmall.SyntaxErrorException;
 
+/**
+ * A failed attempt to implement the new formula.
+ */
 public class M2 {
 	
 	public final int dedekind;

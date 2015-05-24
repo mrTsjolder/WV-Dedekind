@@ -39,6 +39,12 @@ public class AntiChainSolver {
 		return BigInteger.valueOf(1<<(CountConnected(graph(r1,r2.minus(r1)))));
 	}
 	
+	/**
+	 * 
+	 * @param r1
+	 * @param r2
+	 * @return
+	 */
 	private static SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> graph(SmallAntiChain r1, SmallAntiChain r2) {
 		SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> ret = new TreeMap<SmallBasicSet, SortedSet<SmallBasicSet>>();
 		for (SmallBasicSet r : r2) {
@@ -51,6 +57,11 @@ public class AntiChainSolver {
 		return ret;
 	}
 
+	/**
+	 * 
+	 * @param g
+	 * @return
+	 */
 	private static long CountConnected(SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> g) {
 		SortedSet<SmallBasicSet> had = new TreeSet<SmallBasicSet>();
 		long ret = 0;
@@ -64,6 +75,12 @@ public class AntiChainSolver {
 		return ret;
 	}
 
+	/**
+	 * 
+	 * @param g
+	 * @param n
+	 * @param had
+	 */
 	private static void doNode(SortedMap<SmallBasicSet, SortedSet<SmallBasicSet>> g, SmallBasicSet n, SortedSet<SmallBasicSet> had) {
 		for (SmallBasicSet m : g.get(n)) {
 			if (had.add(m)) doNode(g,m,had);
@@ -80,9 +97,8 @@ public class AntiChainSolver {
 	 * 			The first pool of pools is being used for calculation. If no pools are given, 
 	 * 			{@link Executors#newFixedThreadPool(int)} will provide a pool with 1 thread.
 	 * @return 	array of maps, mapping each biginteger to the size of the equivalence class it represents
-	 * @throws 	SyntaxErrorException
 	 */
-	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till, ExecutorService... pools) throws SyntaxErrorException {
+	public static SortedMap<BigInteger, Long>[] equivalenceClasses(int till, ExecutorService... pools) throws SecurityException {
 		int temp = pools.length;
 		if(temp < 1)
 			pools = new ExecutorService[]{ Executors.newFixedThreadPool(1) };
@@ -122,12 +138,13 @@ public class AntiChainSolver {
 		Future<?>[] list = new Future[S.size()];
 		int i = 0;
 		for (final BigInteger tCode : S.keySet()) {
-			list[i++] = pool.submit(new Runnable() {
+			final int temp = i++;
+			list[temp] = pool.submit(new Runnable() {
 
 				@Override
 				public void run() {
 					SmallAntiChain t = SmallAntiChain.decode(tCode);
-					Set<int[]> rtsymm = (t.join(l)).symmetryGroup();
+					Set<int[]> rtsymm = t.join(l).symmetryGroup();
 					SortedMap<BigInteger, Long> St = new TreeMap<BigInteger, Long>();
 					//TODO: lose deprecated...
 					for (SmallAntiChain x : new AntiChainInterval(t.join(l),u.omicron(t, alfa))) {

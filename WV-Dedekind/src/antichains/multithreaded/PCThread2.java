@@ -9,6 +9,9 @@ import java.util.SortedMap;
 import amfsmall.SmallAntiChain;
 import amfsmall.AntiChainInterval;
 
+/**
+ * A failed attempt to implement the new formula.
+ */
 public class PCThread2 extends Thread {
 
 	private SmallAntiChain function;

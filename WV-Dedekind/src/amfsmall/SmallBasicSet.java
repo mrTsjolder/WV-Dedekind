@@ -367,7 +367,9 @@ public class SmallBasicSet implements Iterable<Integer>, Comparable<SmallBasicSe
 		return res;
 	}
 	
-	//TODO: comments
+	/**
+	 * @return the bit sequence representation of this set as a {@code long}
+	 */
 	public long toLong() {
 		return theSet;
 	}

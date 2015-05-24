@@ -42,7 +42,9 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	}
 	
 	/**
-	 * Create an antichain based on a long.
+	 * Create an antichain based on an array of longs.
+	 * 
+	 * @see #toLongArray()
 	 */
 	public SmallAntiChain(long[] l) {
 //		theAntiChain = BitSet.valueOf(l);
@@ -458,6 +460,12 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 		return res;
 	}
 	
+	/**
+	 * Convert this antichain to an array of longs.
+	 * 
+	 * @return an array of longs representing the bit sequence behind this antichain together with its universe.
+	 * @see #SmallAntiChain(long[])
+	 */
 	public long[] toLongArray() {
 //		return theAntiChain.toLongArray();
 		if(this.isEmpty()) {
@@ -737,8 +745,7 @@ public class SmallAntiChain implements Iterable<SmallBasicSet>, Comparable<Small
 	/**
 	 * Get an iterator to iterate over the sets in this antichain
 	 * 
-	 * @return	an iterator that iterates over the sets in the order
-	 * 			that follows from the representation from Carl Salaets
+	 * @return	an iterator that iterates over the sets in this antichain
 	 */
 	@Override
 	public Iterator<SmallBasicSet> iterator() {
